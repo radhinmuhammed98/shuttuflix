@@ -1,0 +1,97 @@
+* {
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #fff0f6;
+  color: #4a2c40;
+}
+
+/* Header */
+header {
+  padding: 20px;
+  text-align: center;
+}
+
+header h1 {
+  margin-bottom: 10px;
+}
+
+header input {
+  padding: 10px 15px;
+  border-radius: 20px;
+  border: none;
+  width: 70%;
+  max-width: 300px;
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+/* Cards */
+.card {
+  background: #ffe3ec;
+  border-radius: 20px;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  transition: transform 0.25s ease;
+}
+
+.card:hover {
+  transform: scale(1.05);
+}
+
+.card img {
+  width: 100%;
+  border-radius: 15px;
+}
+
+.card span {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+/* Player Modal */
+#playerModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  justify-content: center;
+  align-items: center;
+}
+
+.playerBox {
+  background: #fff;
+  width: 90%;
+  max-width: 800px;
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+.playerBox button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.playerBox iframe {
+  width: 100%;
+  height: 450px;
+  border: none;
+}

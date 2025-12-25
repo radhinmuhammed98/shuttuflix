@@ -15,16 +15,37 @@ header {
   text-align: center;
 }
 
-header h1 {
-  margin-bottom: 10px;
+.search-wrap {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
 }
 
 header input {
-  padding: 10px 15px;
-  border-radius: 20px;
+  padding: 12px 16px;
+  border-radius: 25px;
   border: none;
-  width: 70%;
-  max-width: 300px;
+  width: 220px;
+  outline: none;
+  transition: box-shadow .3s;
+}
+
+header input:focus {
+  box-shadow: 0 0 0 3px rgba(255,105,180,.4);
+}
+
+header button {
+  border: none;
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  cursor: pointer;
+}
+
+/* Status */
+#statusText {
+  text-align: center;
+  opacity: .7;
 }
 
 /* Grid */
@@ -35,7 +56,7 @@ header input {
   padding: 20px;
 }
 
-/* Cards */
+/* Card */
 .card {
   background: #ffe3ec;
   border-radius: 20px;
@@ -43,7 +64,7 @@ header input {
   text-align: center;
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-  transition: transform 0.25s ease;
+  transition: transform .25s;
 }
 
 .card:hover {
@@ -55,18 +76,12 @@ header input {
   border-radius: 15px;
 }
 
-.card span {
-  display: block;
-  margin-top: 8px;
-  font-size: 14px;
-}
-
-/* Player Modal */
+/* Player */
 #playerModal {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,.6);
   justify-content: center;
   align-items: center;
 }
@@ -80,6 +95,12 @@ header input {
   position: relative;
 }
 
+.playerBox iframe {
+  width: 100%;
+  height: 450px;
+  border: none;
+}
+
 .playerBox button {
   position: absolute;
   top: 10px;
@@ -87,11 +108,4 @@ header input {
   background: none;
   border: none;
   font-size: 20px;
-  cursor: pointer;
-}
-
-.playerBox iframe {
-  width: 100%;
-  height: 450px;
-  border: none;
 }

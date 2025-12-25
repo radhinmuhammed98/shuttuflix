@@ -1,5 +1,5 @@
-// ⚠️ Replace with your TMDB API key
-const TMDB_KEY = "YOUR_TMDB_API_KEY";
+// 🔑 PUT YOUR REAL TMDB API KEY HERE
+const TMDB_KEY = "PASTE_YOUR_TMDB_API_KEY_HERE";
 
 const input = document.getElementById("searchInput");
 const grid = document.getElementById("movieGrid");
@@ -8,51 +8,78 @@ const voiceBtn = document.getElementById("voiceBtn");
 
 let debounceTimer;
 
-// 🔁 Debounced search
+/* ---------------- SEARCH ---------------- */
+
 input.addEventListener("input", () => {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
-    searchMovies(input.value);
+    searchMovies(input.value.trim());
   }, 500);
 });
 
-// 🎙️ Voice search
+/* ---------------- VOICE ---------------- */
+
 voiceBtn.onclick = () => {
-  const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  if (!("webkitSpeechRecognition" in window)) {
+    alert("voice search not supported, pookie 😔");
+    return;
+  }
+
+  const rec = new webkitSpeechRecognition();
   rec.lang = "en-US";
   rec.start();
 
   rec.onresult = e => {
     input.value = e.results[0][0].transcript;
-    searchMovies(input.value);
+    searchMovies(input.value.trim());
   };
 };
 
-// 🔍 TMDB Search
+/* ---------------- TMDB SEARCH ---------------- */
+
 async function searchMovies(query) {
   grid.innerHTML = "";
+
   if (!query) {
     statusText.textContent = "✨ start typing, pookie ✨";
     return;
   }
 
-  statusText.textContent = "🔍 searching...";
-
-  const res = await fetch(
-    `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${query}`
-  );
-  const data = await res.json();
-
-  if (!data.results.length) {
-    statusText.textContent = "😔 no results found, pookie";
+  if (!TMDB_KEY || TMDB_KEY.includes("PASTE")) {
+    statusText.textContent = "❌ TMDB API key missing, pookie";
     return;
   }
 
-  statusText.textContent = "";
-  data.results.forEach(movie => createCard(movie));
+  statusText.textContent = "🔍 searching...";
+
+  try {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`
+    );
+
+    if (!res.ok) throw new Error("TMDB error");
+
+    const data = await res.json();
+
+    if (!data.results || data.results.length === 0) {
+      statusText.textContent = "😔 no results found, pookie";
+      return;
+    }
+
+    statusText.textContent = "";
+
+    data.results.forEach(movie => {
+      if (movie.poster_path) createCard(movie);
+    });
+
+  } catch (err) {
+    console.error(err);
+    statusText.textContent = "⚠️ something broke, pookie";
+  }
 }
 
-// 🎥 Create movie card
+/* ---------------- CARD ---------------- */
+
 function createCard(movie) {
   const card = document.createElement("div");
   card.className = "card";
@@ -66,10 +93,12 @@ function createCard(movie) {
   grid.appendChild(card);
 }
 
-// ▶️ Player
+/* ---------------- PLAYER ---------------- */
+
 function playMovie(id) {
   document.getElementById("playerFrame").src =
     `https://www.vidking.net/embed/movie/${id}?autoPlay=true&color=ff69b4`;
+
   document.getElementById("playerModal").style.display = "flex";
 }
 

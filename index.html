@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PookieStream 🎀</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>🎀 PookieStream</h1>
+  <input type="text" placeholder="search movies, pookie..." />
+</header>
+
+<main class="grid">
+  <!-- Movie Card -->
+  <div class="card" onclick="playMovie(550)">
+    <img src="https://image.tmdb.org/t/p/w500/8kNruSfhk5IoE4eZOc4UpvDn6tq.jpg">
+    <span>Fight Club</span>
+  </div>
+
+  <div class="card" onclick="playMovie(299534)">
+    <img src="https://image.tmdb.org/t/p/w500/ubXNpx9DNYH2T6ozKcK6Zz1t1QH.jpg">
+    <span>Avengers</span>
+  </div>
+</main>
+
+<!-- Player Modal -->
+<div id="playerModal">
+  <div class="playerBox">
+    <button onclick="closePlayer()">✕</button>
+    <iframe id="playerFrame" allowfullscreen></iframe>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

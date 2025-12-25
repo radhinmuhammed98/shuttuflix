@@ -9,20 +9,20 @@
 
 <header>
   <h1>🎀 PookieStream</h1>
-  <input type="text" placeholder="search movies, pookie..." />
+
+  <div class="search-wrap">
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="search movies, pookie..."
+    >
+    <button id="voiceBtn">🎙️</button>
+  </div>
 </header>
 
-<main class="grid">
-  <!-- Movie Card -->
-  <div class="card" onclick="playMovie(550)">
-    <img src="https://image.tmdb.org/t/p/w500/8kNruSfhk5IoE4eZOc4UpvDn6tq.jpg">
-    <span>Fight Club</span>
-  </div>
-
-  <div class="card" onclick="playMovie(299534)">
-    <img src="https://image.tmdb.org/t/p/w500/ubXNpx9DNYH2T6ozKcK6Zz1t1QH.jpg">
-    <span>Avengers</span>
-  </div>
+<main>
+  <p id="statusText">✨ start typing, pookie ✨</p>
+  <div class="grid" id="movieGrid"></div>
 </main>
 
 <!-- Player Modal -->

@@ -1,38 +1,1315 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>PookieStream 🎀</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PookieStream - Stranger Things Experience</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare/cdnjs/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ===== STRANGER THINGS THEME ===== */
+        :root {
+            --stranger-red: #ff0a26;
+            --stranger-red-glow: rgba(255, 10, 38, 0.7);
+            --stranger-black: #0a0a0a;
+            --stranger-dark: #121212;
+            --stranger-gray: #222;
+            --stranger-neon: #ff0a26;
+            --stranger-font: 'Stranger Things', 'Press Start 2P', 'Orbitron', 'Arial Black', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--stranger-black);
+            color: white;
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 10, 38, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 10, 38, 0.05) 0%, transparent 20%),
+                linear-gradient(to bottom, var(--stranger-black) 0%, var(--stranger-dark) 100%);
+        }
+
+        /* Neon glow effect */
+        .neon-glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.1;
+            background: 
+                radial-gradient(circle at 10% 10%, var(--stranger-neon) 0%, transparent 40%),
+                radial-gradient(circle at 90% 10%, var(--stranger-neon) 0%, transparent 40%),
+                radial-gradient(circle at 10% 90%, var(--stranger-neon) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, var(--stranger-neon) 0%, transparent 40%);
+            animation: pulse 8s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.05; }
+            100% { opacity: 0.15; }
+        }
+
+        /* Header */
+        header {
+            background: rgba(10, 10, 10, 0.9);
+            padding: 1.5rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 2px solid var(--stranger-red);
+            backdrop-filter: blur(5px);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-family: var(--stranger-font);
+            font-size: 2.5rem;
+            color: var(--stranger-red);
+            text-shadow: 
+                0 0 5px var(--stranger-red),
+                0 0 10px var(--stranger-red),
+                0 0 15px var(--stranger-red);
+            letter-spacing: -1px;
+            animation: flicker 3s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+                text-shadow: 
+                    0 0 5px var(--stranger-red),
+                    0 0 10px var(--stranger-red),
+                    0 0 15px var(--stranger-red);
+            }
+            20%, 24%, 55% {
+                text-shadow: 
+                    0 0 2px var(--stranger-red),
+                    0 0 4px var(--stranger-red),
+                    0 0 6px var(--stranger-red);
+            }
+        }
+
+        .search-container {
+            position: relative;
+            width: 60%;
+            max-width: 600px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 0.8rem 1.5rem 0.8rem 2.5rem;
+            background: var(--stranger-gray);
+            border: 2px solid var(--stranger-red);
+            border-radius: 30px;
+            font-size: 1rem;
+            color: white;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 10, 38, 0.3);
+        }
+
+        .search-box:focus {
+            box-shadow: 0 0 20px var(--stranger-red-glow);
+            border-color: var(--stranger-red);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--stranger-red);
+            font-size: 1.2rem;
+        }
+
+        .voice-search {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--stranger-red);
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .voice-search:hover {
+            transform: scale(1.2);
+        }
+
+        /* Main Content */
+        main {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-family: var(--stranger-font);
+            font-size: 1.8rem;
+            color: var(--stranger-red);
+            margin-bottom: 1.5rem;
+            text-align: center;
+            text-shadow: 0 0 10px var(--stranger-red-glow);
+            letter-spacing: 2px;
+        }
+
+        /* Movie Grid */
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 2rem;
+            padding: 1rem 0;
+        }
+
+        .movie-card {
+            background: var(--stranger-gray);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            position: relative;
+            border: 1px solid rgba(255, 10, 38, 0.2);
+        }
+
+        .movie-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 
+                0 0 20px var(--stranger-red-glow),
+                0 10px 20px rgba(0, 0, 0, 0.7);
+            z-index: 10;
+        }
+
+        .movie-poster {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .movie-poster-placeholder {
+            background: 
+                linear-gradient(45deg, #ff0a26, #500015);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .movie-title {
+            padding: 1rem;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1rem;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Player Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            position: relative;
+            width: 90%;
+            max-width: 900px;
+            background: var(--stranger-dark);
+            border: 2px solid var(--stranger-red);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 30px var(--stranger-red-glow);
+        }
+
+        .modal-header {
+            padding: 1rem 1.5rem;
+            background: rgba(255, 10, 38, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-family: var(--stranger-font);
+            font-size: 1.5rem;
+            color: var(--stranger-red);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--stranger-red);
+            font-size: 2rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .close-modal:hover {
+            transform: rotate(90deg);
+            color: white;
+        }
+
+        .player-container {
+            position: relative;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            background: black;
+        }
+
+        .player-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* No Results */
+        .no-results {
+            text-align: center;
+            padding: 3rem;
+            font-size: 1.5rem;
+            color: var(--stranger-red);
+            text-shadow: 0 0 10px var(--stranger-red-glow);
+        }
+
+        .no-results span {
+            display: inline-block;
+            animation: glitch 2s infinite;
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-3px, 3px); }
+            40% { transform: translate(-3px, -3px); }
+            60% { transform: translate(3px, 3px); }
+            80% { transform: translate(3px, -3px); }
+            100% { transform: translate(0); }
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--stranger-red);
+        }
+
+        .loading-dots {
+            display: inline-block;
+        }
+
+        .loading-dots::after {
+            content: '.';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 10, 38, 0.2);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .search-container {
+                width: 70%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .search-container {
+                width: 100%;
+            }
+            
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .movie-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .movie-grid {
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+                gap: 1rem;
+            }
+            
+            .movie-poster {
+                height: 220px;
+            }
+            
+            .movie-title {
+                font-size: 0.85rem;
+                min-height: 50px;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--stranger-black);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--stranger-red);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ff1a36;
+        }
+    </style>
 </head>
 <body>
+    <!-- Neon Glow Background -->
+    <div class="neon-glow"></div>
+    
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <div class="logo">POOKIESTREAM</div>
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="search-input" class="search-box" placeholder="Search for movies or shows...">
+                <button id="voice-search" class="voice-search">
+                    <i class="fas fa-microphone"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main>
+        <h2 class="section-title">NOW STREAMING</h2>
+        <div id="loading" class="loading">Loading content<span class="loading-dots"></span></div>
+        <div id="movie-grid" class="movie-grid"></div>
+        <div id="no-results" class="no-results" style="display: none;">
+            No results found, Stranger... <span>TRY AGAIN</span>
+        </div>
+    </main>
+    
+    <!-- Player Modal -->
+    <div id="player-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title">MOVIE TITLE</h3>
+                <button class="close-modal" id="close-modal">&times;</button>
+            </div>
+            <div class="player-container">
+                <iframe id="player-iframe" class="player-iframe" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer>
+        <p>PookieStream &copy; 2026 - All content is fictional and for demonstration purposes only</p>
+        <p>This site is not affiliated with Netflix, Stranger Things, or any streaming service</p>
+    </footer>
 
-<header>
-  <h1>🎀 PookieStream</h1>
+    <script>
+        // DOM Elements
+        const searchInput = document.getElementById('search-input');
+        const voiceSearchBtn = document.getElementById('voice-search');
+        const movieGrid = document.getElementById('movie-grid');
+        const noResults = document.getElementById('no-results');
+        const loading = document.getElementById('loading');
+        const playerModal = document.getElementById('player-modal');
+        const closeModal = document.getElementById('close-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const playerIframe = document.getElementById('player-iframe');
+        
+        // TMDB API Configuration
+        const API_KEY = 'YOUR_API_KEY'; // Replace with your actual TMDB API key
+        const BASE_URL = 'https://api.themoviedb.org/3';
+        const IMG_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+        
+        // Default movies to display on load
+        const DEFAULT_MOVIES = [
+            { id: 458156, title: 'The Upside Down' },
+            { id: 505642, title: 'Demogorgon Hunt' },
+            { id: 436270, title: 'Stranger Things: The Movie' },
+            { id: 634649, title: 'Vecna Rises' },
+            { id: 335984, title: 'Hawkins Lab Escape' },
+            { id: 496243, title: 'Starcourt Mall Showdown' },
+            { id: 453395, title: 'Eleven Returns' },
+            { id: 566525, title: 'Mind Flayer Attack' }
+        ];
+        
+        // State
+        let movies = [];
+        let currentMovie = null;
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load default movies
+            loadDefaultMovies();
+            
+            // Event listeners
+            searchInput.addEventListener('input', debounce(handleSearch, 500));
+            voiceSearchBtn.addEventListener('click', handleVoiceSearch);
+            closeModal.addEventListener('click', closePlayerModal);
+            playerModal.addEventListener('click', (e) => {
+                if (e.target === playerModal) closePlayerModal();
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closePlayerModal();
+            });
+        });
+        
+        // Load default movies
+        function loadDefaultMovies() {
+            loading.style.display = 'block';
+            movieGrid.innerHTML = '';
+            noResults.style.display = 'none';
+            
+            // Simulate API call delay
+            setTimeout(() => {
+                movies = DEFAULT_MOVIES;
+                renderMovies(movies);
+                loading.style.display = 'none';
+            }, 800);
+        }
+        
+        // Handle search
+        function handleSearch() {
+            const query = searchInput.value.trim();
+            
+            if (query.length === 0) {
+                loadDefaultMovies();
+                return;
+            }
+            
+            loading.style.display = 'block';
+            movieGrid.innerHTML = '';
+            noResults.style.display = 'none';
+            
+            // Simulate API call
+            setTimeout(() => {
+                // In a real implementation, this would call the TMDB API
+                // For demo, we'll just filter our default movies
+                const results = DEFAULT_MOVIES.filter(movie => 
+                    movie.title.toLowerCase().includes(query.toLowerCase())
+                );
+                
+                if (results.length > 0) {
+                    movies = results;
+                    renderMovies(movies);
+                } else {
+                    noResults.style.display = 'block';
+                }
+                
+                loading.style.display = 'none';
+            }, 600);
+        }
+        
+        // Debounce function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // Handle voice search
+        function handleVoiceSearch() {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert('Voice search is not supported in your browser.');
+                return;
+            }
+            
+            const recognition = new webkitSpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            
+            recognition.start();
+            
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                searchInput.value = transcript;
+                handleSearch();
+            };
+            
+            recognition.onerror = (event) => {
+                console.error('Voice recognition error:', event.error);
+            };
+        }
+        
+        // Render movies to the grid
+        function renderMovies(movieList) {
+            movieGrid.innerHTML = '';
+            
+            movieList.forEach(movie => {
+                const movieCard = document.createElement('div');
+                movieCard.className = 'movie-card';
+                movieCard.dataset.id = movie.id;
+                
+                movieCard.innerHTML = `
+                    <div class="movie-poster-placeholder">
+                        <div>${movie.title}</div>
+                    </div>
+                    <div class="movie-title">${movie.title}</div>
+                `;
+                
+                movieCard.addEventListener('click', () => openPlayer(movie));
+                movieGrid.appendChild(movieCard);
+            });
+        }
+        
+        // Open player modal
+        function openPlayer(movie) {
+            currentMovie = movie;
+            modalTitle.textContent = movie.title;
+            
+            // In a real implementation, this would be: 
+            // playerIframe.src = `https://www.vidking.net/embed/movie/${movie.id}?autoPlay=true&color=ff0000`;
+            
+            // For demo, we'll use a placeholder
+            playerIframe.src = `https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1`;
+            
+            playerModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // Close player modal
+        function closePlayerModal() {
+            playerModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            playerIframe.src = ''; // Stop video
+            currentMovie = null;
+        }
+        
+        // Custom alert for missing API key
+        if (API_KEY === 'YOUR_API_KEY') {
+            console.warn('Please replace YOUR_API_KEY with your actual TMDB API key');
+            // In a real implementation, we would show a message to the user
+        }
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PookieStream - Stranger Things Experience</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare/cdnjs/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ===== STRANGER THINGS THEME ===== */
+        :root {
+            --stranger-red: #ff0a26;
+            --stranger-red-glow: rgba(255, 10, 38, 0.7);
+            --stranger-black: #0a0a0a;
+            --stranger-dark: #121212;
+            --stranger-gray: #222;
+            --stranger-neon: #ff0a26;
+            --stranger-font: 'Stranger Things', 'Press Start 2P', 'Orbitron', 'Arial Black', sans-serif;
+        }
 
-  <div class="search-wrap">
-    <input
-      type="text"
-      id="searchInput"
-      placeholder="search movies, pookie..."
-    >
-    <button id="voiceBtn">🎙️</button>
-  </div>
-</header>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<main>
-  <p id="statusText">✨ start typing, pookie ✨</p>
-  <div class="grid" id="movieGrid"></div>
-</main>
+        body {
+            background-color: var(--stranger-black);
+            color: white;
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 10, 38, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 10, 38, 0.05) 0%, transparent 20%),
+                linear-gradient(to bottom, var(--stranger-black) 0%, var(--stranger-dark) 100%);
+        }
 
-<!-- Player Modal -->
-<div id="playerModal">
-  <div class="playerBox">
-    <button onclick="closePlayer()">✕</button>
-    <iframe id="playerFrame" allowfullscreen></iframe>
-  </div>
-</div>
+        /* Neon glow effect */
+        .neon-glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.1;
+            background: 
+                radial-gradient(circle at 10% 10%, var(--stranger-neon) 0%, transparent 40%),
+                radial-gradient(circle at 90% 10%, var(--stranger-neon) 0%, transparent 40%),
+                radial-gradient(circle at 10% 90%, var(--stranger-neon) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, var(--stranger-neon) 0%, transparent 40%);
+            animation: pulse 8s infinite alternate;
+        }
 
-<script src="script.js"></script>
+        @keyframes pulse {
+            0% { opacity: 0.05; }
+            100% { opacity: 0.15; }
+        }
+
+        /* Header */
+        header {
+            background: rgba(10, 10, 10, 0.9);
+            padding: 1.5rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 2px solid var(--stranger-red);
+            backdrop-filter: blur(5px);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-family: var(--stranger-font);
+            font-size: 2.5rem;
+            color: var(--stranger-red);
+            text-shadow: 
+                0 0 5px var(--stranger-red),
+                0 0 10px var(--stranger-red),
+                0 0 15px var(--stranger-red);
+            letter-spacing: -1px;
+            animation: flicker 3s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+                text-shadow: 
+                    0 0 5px var(--stranger-red),
+                    0 0 10px var(--stranger-red),
+                    0 0 15px var(--stranger-red);
+            }
+            20%, 24%, 55% {
+                text-shadow: 
+                    0 0 2px var(--stranger-red),
+                    0 0 4px var(--stranger-red),
+                    0 0 6px var(--stranger-red);
+            }
+        }
+
+        .search-container {
+            position: relative;
+            width: 60%;
+            max-width: 600px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 0.8rem 1.5rem 0.8rem 2.5rem;
+            background: var(--stranger-gray);
+            border: 2px solid var(--stranger-red);
+            border-radius: 30px;
+            font-size: 1rem;
+            color: white;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 10, 38, 0.3);
+        }
+
+        .search-box:focus {
+            box-shadow: 0 0 20px var(--stranger-red-glow);
+            border-color: var(--stranger-red);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--stranger-red);
+            font-size: 1.2rem;
+        }
+
+        .voice-search {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--stranger-red);
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .voice-search:hover {
+            transform: scale(1.2);
+        }
+
+        /* Main Content */
+        main {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-family: var(--stranger-font);
+            font-size: 1.8rem;
+            color: var(--stranger-red);
+            margin-bottom: 1.5rem;
+            text-align: center;
+            text-shadow: 0 0 10px var(--stranger-red-glow);
+            letter-spacing: 2px;
+        }
+
+        /* Movie Grid */
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 2rem;
+            padding: 1rem 0;
+        }
+
+        .movie-card {
+            background: var(--stranger-gray);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            position: relative;
+            border: 1px solid rgba(255, 10, 38, 0.2);
+        }
+
+        .movie-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 
+                0 0 20px var(--stranger-red-glow),
+                0 10px 20px rgba(0, 0, 0, 0.7);
+            z-index: 10;
+        }
+
+        .movie-poster {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .movie-poster-placeholder {
+            background: 
+                linear-gradient(45deg, #ff0a26, #500015);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .movie-title {
+            padding: 1rem;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1rem;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Player Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            position: relative;
+            width: 90%;
+            max-width: 900px;
+            background: var(--stranger-dark);
+            border: 2px solid var(--stranger-red);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 30px var(--stranger-red-glow);
+        }
+
+        .modal-header {
+            padding: 1rem 1.5rem;
+            background: rgba(255, 10, 38, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-family: var(--stranger-font);
+            font-size: 1.5rem;
+            color: var(--stranger-red);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--stranger-red);
+            font-size: 2rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .close-modal:hover {
+            transform: rotate(90deg);
+            color: white;
+        }
+
+        .player-container {
+            position: relative;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            background: black;
+        }
+
+        .player-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* No Results */
+        .no-results {
+            text-align: center;
+            padding: 3rem;
+            font-size: 1.5rem;
+            color: var(--stranger-red);
+            text-shadow: 0 0 10px var(--stranger-red-glow);
+        }
+
+        .no-results span {
+            display: inline-block;
+            animation: glitch 2s infinite;
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-3px, 3px); }
+            40% { transform: translate(-3px, -3px); }
+            60% { transform: translate(3px, 3px); }
+            80% { transform: translate(3px, -3px); }
+            100% { transform: translate(0); }
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--stranger-red);
+        }
+
+        .loading-dots {
+            display: inline-block;
+        }
+
+        .loading-dots::after {
+            content: '.';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 10, 38, 0.2);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .search-container {
+                width: 70%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .search-container {
+                width: 100%;
+            }
+            
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .movie-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .movie-grid {
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+                gap: 1rem;
+            }
+            
+            .movie-poster {
+                height: 220px;
+            }
+            
+            .movie-title {
+                font-size: 0.85rem;
+                min-height: 50px;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--stranger-black);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--stranger-red);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ff1a36;
+        }
+    </style>
+</head>
+<body>
+    <!-- Neon Glow Background -->
+    <div class="neon-glow"></div>
+    
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <div class="logo">POOKIESTREAM</div>
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="search-input" class="search-box" placeholder="Search for movies or shows...">
+                <button id="voice-search" class="voice-search">
+                    <i class="fas fa-microphone"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main>
+        <h2 class="section-title">NOW STREAMING</h2>
+        <div id="loading" class="loading">Loading content<span class="loading-dots"></span></div>
+        <div id="movie-grid" class="movie-grid"></div>
+        <div id="no-results" class="no-results" style="display: none;">
+            No results found, Stranger... <span>TRY AGAIN</span>
+        </div>
+    </main>
+    
+    <!-- Player Modal -->
+    <div id="player-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title">MOVIE TITLE</h3>
+                <button class="close-modal" id="close-modal">&times;</button>
+            </div>
+            <div class="player-container">
+                <iframe id="player-iframe" class="player-iframe" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer>
+        <p>PookieStream &copy; 2026 - All content is fictional and for demonstration purposes only</p>
+        <p>This site is not affiliated with Netflix, Stranger Things, or any streaming service</p>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const searchInput = document.getElementById('search-input');
+        const voiceSearchBtn = document.getElementById('voice-search');
+        const movieGrid = document.getElementById('movie-grid');
+        const noResults = document.getElementById('no-results');
+        const loading = document.getElementById('loading');
+        const playerModal = document.getElementById('player-modal');
+        const closeModal = document.getElementById('close-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const playerIframe = document.getElementById('player-iframe');
+        
+        // TMDB API Configuration
+        const API_KEY = 'YOUR_API_KEY'; // Replace with your actual TMDB API key
+        const BASE_URL = 'https://api.themoviedb.org/3';
+        const IMG_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+        
+        // Default movies to display on load
+        const DEFAULT_MOVIES = [
+            { id: 458156, title: 'The Upside Down' },
+            { id: 505642, title: 'Demogorgon Hunt' },
+            { id: 436270, title: 'Stranger Things: The Movie' },
+            { id: 634649, title: 'Vecna Rises' },
+            { id: 335984, title: 'Hawkins Lab Escape' },
+            { id: 496243, title: 'Starcourt Mall Showdown' },
+            { id: 453395, title: 'Eleven Returns' },
+            { id: 566525, title: 'Mind Flayer Attack' }
+        ];
+        
+        // State
+        let movies = [];
+        let currentMovie = null;
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load default movies
+            loadDefaultMovies();
+            
+            // Event listeners
+            searchInput.addEventListener('input', debounce(handleSearch, 500));
+            voiceSearchBtn.addEventListener('click', handleVoiceSearch);
+            closeModal.addEventListener('click', closePlayerModal);
+            playerModal.addEventListener('click', (e) => {
+                if (e.target === playerModal) closePlayerModal();
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closePlayerModal();
+            });
+        });
+        
+        // Load default movies
+        function loadDefaultMovies() {
+            loading.style.display = 'block';
+            movieGrid.innerHTML = '';
+            noResults.style.display = 'none';
+            
+            // Simulate API call delay
+            setTimeout(() => {
+                movies = DEFAULT_MOVIES;
+                renderMovies(movies);
+                loading.style.display = 'none';
+            }, 800);
+        }
+        
+        // Handle search
+        function handleSearch() {
+            const query = searchInput.value.trim();
+            
+            if (query.length === 0) {
+                loadDefaultMovies();
+                return;
+            }
+            
+            loading.style.display = 'block';
+            movieGrid.innerHTML = '';
+            noResults.style.display = 'none';
+            
+            // Simulate API call
+            setTimeout(() => {
+                // In a real implementation, this would call the TMDB API
+                // For demo, we'll just filter our default movies
+                const results = DEFAULT_MOVIES.filter(movie => 
+                    movie.title.toLowerCase().includes(query.toLowerCase())
+                );
+                
+                if (results.length > 0) {
+                    movies = results;
+                    renderMovies(movies);
+                } else {
+                    noResults.style.display = 'block';
+                }
+                
+                loading.style.display = 'none';
+            }, 600);
+        }
+        
+        // Debounce function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // Handle voice search
+        function handleVoiceSearch() {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert('Voice search is not supported in your browser.');
+                return;
+            }
+            
+            const recognition = new webkitSpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            
+            recognition.start();
+            
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                searchInput.value = transcript;
+                handleSearch();
+            };
+            
+            recognition.onerror = (event) => {
+                console.error('Voice recognition error:', event.error);
+            };
+        }
+        
+        // Render movies to the grid
+        function renderMovies(movieList) {
+            movieGrid.innerHTML = '';
+            
+            movieList.forEach(movie => {
+                const movieCard = document.createElement('div');
+                movieCard.className = 'movie-card';
+                movieCard.dataset.id = movie.id;
+                
+                movieCard.innerHTML = `
+                    <div class="movie-poster-placeholder">
+                        <div>${movie.title}</div>
+                    </div>
+                    <div class="movie-title">${movie.title}</div>
+                `;
+                
+                movieCard.addEventListener('click', () => openPlayer(movie));
+                movieGrid.appendChild(movieCard);
+            });
+        }
+        
+        // Open player modal
+        function openPlayer(movie) {
+            currentMovie = movie;
+            modalTitle.textContent = movie.title;
+            
+            // In a real implementation, this would be: 
+            // playerIframe.src = `https://www.vidking.net/embed/movie/${movie.id}?autoPlay=true&color=ff0000`;
+            
+            // For demo, we'll use a placeholder
+            playerIframe.src = `https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1`;
+            
+            playerModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // Close player modal
+        function closePlayerModal() {
+            playerModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            playerIframe.src = ''; // Stop video
+            currentMovie = null;
+        }
+        
+        // Custom alert for missing API key
+        if (API_KEY === 'YOUR_API_KEY') {
+            console.warn('Please replace YOUR_API_KEY with your actual TMDB API key');
+            // In a real implementation, we would show a message to the user
+        }
+    </script>
 </body>
 </html>

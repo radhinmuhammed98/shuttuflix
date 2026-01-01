@@ -16,61 +16,73 @@
       color: white;
       font-family: system-ui, -apple-system, sans-serif;
       padding: 16px;
-      line-height: 1.4;
     }
 
-    /* Search */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #333;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      color: #ff0a26;
+    }
+
     .search-box {
       width: 100%;
-      padding: 14px 20px;
-      border-radius: 32px;
-      border: 2px solid #ff0040;
+      padding: 12px 16px;
+      border-radius: 30px;
+      border: 2px solid #ff0a26;
       background: #111;
       color: white;
-      font-size: 16px; /* Prevents iOS zoom */
-      outline: none;
+      font-size: 16px; /* prevents iOS zoom */
     }
 
-    /* Movies */
-    .movies {
-      margin-top: 24px;
+    .section {
+      margin: 32px 0 24px;
     }
 
-    .movie {
+    .section-title {
+      font-size: 18px;
+      margin-bottom: 16px;
+      color: #ff0a26;
+    }
+
+    .movie-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 16px;
+    }
+
+    .movie-card {
       background: #1a1a1a;
-      border-radius: 12px;
+      border-radius: 10px;
       overflow: hidden;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: transform 0.2s;
     }
 
-    .poster {
+    .movie-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .movie-poster {
       width: 100%;
-      height: 220px;
+      height: 200px;
       object-fit: cover;
-      display: block;
     }
 
-    .info {
-      padding: 14px;
+    .movie-title {
+      padding: 8px;
+      font-size: 14px;
+      text-align: center;
     }
 
-    .title {
-      font-weight: bold;
-      font-size: 16px;
-      margin-bottom: 6px;
-    }
-
-    .overview {
-      font-size: 13px;
-      color: #ccc;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    /* Modal */
     .modal {
       display: none;
       position: fixed;
@@ -89,30 +101,27 @@
     .modal-content {
       width: 95vw;
       max-width: 600px;
-      background: #222;
-      border-radius: 16px;
-      overflow: hidden;
     }
 
     .modal-header {
-      padding: 16px;
+      padding: 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid #333;
+      background: #222;
     }
 
     .close-btn {
       background: none;
       border: none;
       color: white;
-      font-size: 28px;
+      font-size: 24px;
       cursor: pointer;
     }
 
     .player-container {
       position: relative;
-      padding-top: 56.25%; /* 16:9 */
+      padding-top: 56.25%;
     }
 
     .player-iframe {
@@ -122,180 +131,148 @@
       border: none;
     }
 
-    /* Messages */
-    .message {
-      text-align: center;
-      padding: 40px 0;
-      color: #ff0040;
-    }
-
-    /* Loading */
-    .loading {
-      display: flex;
-      justify-content: center;
-      padding: 30px 0;
-    }
-
-    .spinner {
-      width: 24px;
-      height: 24px;
-      border: 3px solid rgba(255,0,64,0.3);
-      border-top: 3px solid #ff0040;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* Responsive */
     @media (min-width: 768px) {
-      .movie {
-        display: flex;
-        height: 180px;
-      }
-      
-      .poster {
-        height: 100%;
-        width: 120px;
-        border-radius: 12px 0 0 12px;
-      }
-      
-      .info {
-        padding: 16px;
-        flex: 1;
+      .movie-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       }
     }
   </style>
 </head>
 <body>
-  <input type="text" id="search" class="search-box" placeholder="Search movies..." />
-
-  <div id="loading" class="loading" style="display: none;">
-    <div class="spinner"></div>
+  <div class="header">
+    <div class="logo">SHUTTUF LIX</div>
   </div>
 
-  <div id="error" class="message" style="display: none;"></div>
-  <div id="movies" class="movies"></div>
+  <input type="text" id="search" class="search-box" placeholder="Search movies or shows..." />
 
-  <!-- Modal -->
-  <div id="modal" class="modal">
+  <div class="section">
+    <h2 class="section-title">Trending Now</h2>
+    <div id="trending-grid" class="movie-grid"></div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Top Rated</h2>
+    <div id="top-rated-grid" class="movie-grid"></div>
+  </div>
+
+  <!-- Player Modal -->
+  <div id="player-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 id="modal-title">Trailer</h2>
-        <button id="close" class="close-btn">&times;</button>
+        <h2 id="modal-title">Movie</h2>
+        <button id="close-modal" class="close-btn">&times;</button>
       </div>
       <div class="player-container">
-        <iframe id="player" class="player-iframe" allowfullscreen></iframe>
+        <iframe id="player-iframe" class="player-iframe" allowfullscreen></iframe>
       </div>
     </div>
   </div>
 
   <script>
-    // ✅ RELIABLE PUBLIC API (always returns results)
-    const API_URL = 'https://api.popcorntime.app/v2/movies/top';
+    // ✅ PRE-LOADED MOVIE DATA (like Cineby) - REAL TMDB IDs THAT WORK ON VIDKING
+    const MOVIE_DATA = {
+      trending: [
+        { id: 1078605, title: "Weapons", poster: "https://image.tmdb.org/t/p/w500/cpf7vsRZ0MYRQcnLWteD5jK9ymT.jpg" },
+        { id: 66732, title: "Stranger Things", poster: "https://image.tmdb.org/t/p/w500/cVxVGwHce6xnW8UaVUggaPXbmoE.jpg", isTv: true },
+        { id: 967941, title: "Wicked: For Good", poster: "https://image.tmdb.org/t/p/w500/u7x3I5V9aP4tMZACmM8ClY8lK6K.jpg" },
+        { id: 83533, title: "Avatar: Fire and Ash", poster: "https://image.tmdb.org/t/p/w500/g96wHxU7EnoIFwemb2RgohIXrgW.jpg" },
+        { id: 1084242, title: "Zootopia 2", poster: "https://image.tmdb.org/t/p/w500/bjUWGw0Ao0qVWxagN3VCwBJHVo6.jpg" },
+        { id: 812583, title: "Wake Up Dead Man", poster: "https://image.tmdb.org/t/p/w500/eDKPKlMtHjRQimYQz4eOgKYW5q6.jpg" }
+      ],
+      topRated: [
+        { id: 278, title: "The Shawshank Redemption", poster: "https://image.tmdb.org/t/p/w500/9cqNxx0GxF0bflZmeSMuL5tnGzr.jpg" },
+        { id: 238, title: "The Godfather", poster: "https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg" },
+        { id: 424, title: "Schindler's List", poster: "https://image.tmdb.org/t/p/w500/sF1U4EUQS8YHUYjNl3pMGNIQyr0.jpg" },
+        { id: 155, title: "The Dark Knight", poster: "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg" },
+        { id: 497, title: "The Green Mile", poster: "https://image.tmdb.org/t/p/w500/o0lO84GI7qrG6XFvtsPOSV7CTNa.jpg" },
+        { id: 122, title: "Lord of the Rings: ROTK", poster: "https://image.tmdb.org/t/p/w500/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg" }
+      ]
+    };
 
+    // DOM
     const searchInput = document.getElementById('search');
-    const moviesContainer = document.getElementById('movies');
-    const loadingEl = document.getElementById('loading');
-    const errorEl = document.getElementById('error');
-    const modal = document.getElementById('modal');
-    const closeModal = document.getElementById('close');
+    const trendingGrid = document.getElementById('trending-grid');
+    const topRatedGrid = document.getElementById('top-rated-grid');
+    const modal = document.getElementById('player-modal');
+    const closeModal = document.getElementById('close-modal');
     const modalTitle = document.getElementById('modal-title');
-    const player = document.getElementById('player');
+    const playerIframe = document.getElementById('player-iframe');
 
-    // Fetch movies (on load)
-    async function fetchMovies(query = '') {
-      showLoading();
-      
-      try {
-        // For simplicity, we'll always show top movies on load
-        // In a real app, you'd search: https://api.popcorntime.app/v2/search?q=${query}
-        const res = await fetch(API_URL);
-        const movies = await res.json();
-        
-        hideLoading();
-        
-        if (movies.length > 0) {
-          renderMovies(movies.slice(0, 12)); // Show first 12
-          errorEl.style.display = 'none';
-        } else {
-          showError('No movies found.');
-        }
-      } catch (err) {
-        console.error(err);
-        hideLoading();
-        showError('Failed to load movies. Please try again.');
-      }
-    }
-
-    function renderMovies(movies) {
-      moviesContainer.innerHTML = '';
+    // Render movies
+    function renderMovies(movies, container) {
+      container.innerHTML = '';
       movies.forEach(movie => {
-        const div = document.createElement('div');
-        div.className = 'movie';
-        div.innerHTML = `
-          <img class="poster" src="${movie.image}" alt="${movie.title}">
-          <div class="info">
-            <div class="title">${movie.title} (${movie.year})</div>
-            <div class="overview">${movie.synopsis || 'No description available.'}</div>
-          </div>
+        const card = document.createElement('div');
+        card.className = 'movie-card';
+        card.innerHTML = `
+          <img class="movie-poster" src="${movie.poster}" alt="${movie.title}">
+          <div class="movie-title">${movie.title}</div>
         `;
-        div.addEventListener('click', () => openTrailer(movie));
-        moviesContainer.appendChild(div);
+        card.addEventListener('click', () => openPlayer(movie));
+        container.appendChild(card);
       });
     }
 
-    function openTrailer(movie) {
-      modalTitle.textContent = `Trailer: ${movie.title}`;
-      // Use YouTube trailer (always works)
-      player.src = `https://www.youtube.com/embed/${movie.trailer}?autoplay=1`;
+    // Open player
+    function openPlayer(movie) {
+      modalTitle.textContent = movie.title;
+      let src = `https://www.vidking.net/embed/movie/${movie.id}?autoPlay=true&color=ff0000`;
+      // For TV shows (Stranger Things), you'd use a different route
+      if (movie.isTv) {
+        // Simple: open S1E1 (you can enhance later)
+        src = `https://www.vidking.net/embed/tv/${movie.id}/1/1?autoPlay=true&color=ff0000&nextEpisode=true&episodeSelector=true`;
+      }
+      playerIframe.src = src;
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
     }
 
-    function closeTrailer() {
+    // Close modal
+    function closePlayer() {
       modal.classList.remove('active');
       document.body.style.overflow = 'auto';
-      player.src = '';
+      playerIframe.src = '';
     }
 
-    function showLoading() {
-      loadingEl.style.display = 'block';
-      errorEl.style.display = 'none';
-    }
-
-    function hideLoading() {
-      loadingEl.style.display = 'none';
-    }
-
-    function showError(msg) {
-      errorEl.textContent = msg;
-      errorEl.style.display = 'block';
-      moviesContainer.innerHTML = '';
+    // Search (filters pre-loaded data)
+    function handleSearch() {
+      const query = searchInput.value.trim().toLowerCase();
+      
+      // Combine all movies
+      const allMovies = [...MOVIE_DATA.trending, ...MOVIE_DATA.topRated];
+      
+      if (query === '') {
+        renderMovies(MOVIE_DATA.trending, trendingGrid);
+        renderMovies(MOVIE_DATA.topRated, topRatedGrid);
+        return;
+      }
+      
+      const filtered = allMovies.filter(m => m.title.toLowerCase().includes(query));
+      
+      // Show results in both sections (or create a new section)
+      trendingGrid.innerHTML = '<h3 class="section-title">Search Results</h3>';
+      if (filtered.length > 0) {
+        const grid = document.createElement('div');
+        grid.className = 'movie-grid';
+        renderMovies(filtered, grid);
+        trendingGrid.appendChild(grid);
+      } else {
+        trendingGrid.innerHTML += '<p style="color:#ff0a26; text-align:center; padding:20px;">No results found</p>';
+      }
+      
+      topRatedGrid.style.display = 'none';
     }
 
     // Events
-    searchInput.addEventListener('input', (e) => {
-      const q = e.target.value.trim();
-      if (q.length > 2) {
-        // For demo, we'll just refetch top movies
-        // In real version, call search API
-        fetchMovies();
-      } else if (q.length === 0) {
-        fetchMovies(); // Show default
-      }
-    });
-
-    closeModal.addEventListener('click', closeTrailer);
+    searchInput.addEventListener('input', handleSearch);
+    closeModal.addEventListener('click', closePlayer);
     modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeTrailer();
+      if (e.target === modal) closePlayer();
     });
 
-    // Load on start
-    fetchMovies();
+    // Init
+    renderMovies(MOVIE_DATA.trending, trendingGrid);
+    renderMovies(MOVIE_DATA.topRated, topRatedGrid);
   </script>
 </body>
 </html>

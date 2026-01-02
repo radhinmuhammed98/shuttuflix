@@ -2,6 +2,7 @@
   "name": "shuttuflix",
   "version": "1.0.0",
   "scripts": {
-    "build": "node scripts/build-catalog.mjs"
+    "build": "node scripts/build-catalog.mjs",
+    "dev": "npm run build"
   }
 }

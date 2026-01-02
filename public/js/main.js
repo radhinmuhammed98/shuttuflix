@@ -1,6 +1,6 @@
-import { initializeSearch } from './search.js';
-import { openPlayer, closePlayer, initializePlayer } from './player.js';
+// Remove ES6 imports - use global functions instead
 
+// Global variables
 let CATALOG = [];
 const FAVORITES_KEY = 'shuttuflix-favorites';
 const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
@@ -12,34 +12,74 @@ const noResultsEl = document.getElementById('no-results');
 const searchInput = document.getElementById('search');
 const modal = document.getElementById('modal');
 
-// Load catalog on init
-async function loadCatalog() {
-  try {
-    showLoading();
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  // Load catalog
+  loadCatalog();
+  
+  // Initialize search
+  initializeSearch();
+  
+  // Initialize player
+  initializePlayer();
+  
+  // Handle search results
+  window.addEventListener('search-results', function(e) {
+    const { results, query } = e.detail;
     
-    const response = await fetch('/data/catalog.json');
-    if (!response.ok) {
-      throw new Error('Failed to load catalog');
+    if (results.length === 0) {
+      noResultsEl.textContent = `No results found for "${query}"`;
+      noResultsEl.style.display = 'block';
+      gridContainer.innerHTML = '';
+    } else {
+      renderCatalog(results);
+      noResultsEl.style.display = 'none';
     }
     
-    CATALOG = await response.json();
+    loadingEl.style.display = 'none';
+  });
+  
+  // Show default catalog when search is cleared
+  window.addEventListener('show-default-catalog', function() {
     renderCatalog(CATALOG);
-    
-  } catch (error) {
-    console.error('Error loading catalog:', error);
-    showError('Failed to load movies. Please refresh the page.');
-  } finally {
-    hideLoading();
-  }
+    noResultsEl.style.display = 'none';
+  });
+});
+
+// Load catalog function
+function loadCatalog() {
+  showLoading();
+  
+  fetch('/data/catalog.json')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to load catalog');
+      }
+      return response.json();
+    })
+    .then(data => {
+      CATALOG = data;
+      renderCatalog(CATALOG);
+    })
+    .catch(error => {
+      console.error('Error loading catalog:', error);
+      noResultsEl.textContent = 'Failed to load movies. Please refresh the page.';
+      noResultsEl.style.display = 'block';
+    })
+    .finally(() => {
+      loadingEl.style.display = 'none';
+    });
 }
 
+// Render catalog function
 function renderCatalog(items) {
   if (!items || items.length === 0) {
-    showNoResults();
+    noResultsEl.style.display = 'block';
+    gridContainer.innerHTML = '';
     return;
   }
   
-  hideNoResults();
+  noResultsEl.style.display = 'none';
   gridContainer.innerHTML = items.slice(0, 100).map(item => `
     <div class="card" onclick="openPlayer(${item.id}, '${item.mediaType}')">
       <img class="poster" src="${item.poster}" alt="${item.title}">
@@ -48,60 +88,14 @@ function renderCatalog(items) {
   `).join('');
 }
 
+// Loading functions
 function showLoading() {
   loadingEl.style.display = 'block';
   gridContainer.innerHTML = '';
-  hideNoResults();
-}
-
-function hideLoading() {
-  loadingEl.style.display = 'none';
-}
-
-function showNoResults() {
-  noResultsEl.style.display = 'block';
-  gridContainer.innerHTML = '';
-}
-
-function hideNoResults() {
   noResultsEl.style.display = 'none';
 }
 
-function showError(message) {
-  noResultsEl.textContent = message;
-  showNoResults();
-}
-
-// Event listeners
-window.addEventListener('DOMContentLoaded', () => {
-  // Initialize search functionality
-  initializeSearch();
-  
-  // Initialize player
-  initializePlayer();
-  
-  // Initial catalog load
-  loadCatalog();
-  
-  // Handle search results
-  window.addEventListener('search-results', (e) => {
-    const { results, query } = e.detail;
-    
-    if (results.length === 0) {
-      noResultsEl.textContent = `No results found for "${query}"`;
-      showNoResults();
-    } else {
-      renderCatalog(results);
-    }
-    
-    hideLoading();
-  });
-  
-  // Show default catalog when search is cleared
-  window.addEventListener('show-default-catalog', () => {
-    renderCatalog(CATALOG);
-  });
-});
-
-// Expose openPlayer to global scope for HTML onclick
+// Global functions for HTML onclick
 window.openPlayer = openPlayer;
+window.closePlayer = closePlayer;
+window.toggleFavorite = toggleFavorite;

@@ -1,18 +1,31 @@
 // api/search.js
-import { NextResponse } from 'next/server';
+export default async function (req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-export async function GET(request) {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  // Only allow GET requests
+  if (req.method !== 'GET') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
+  const url = new URL(req.url, `https://${req.headers.host}`);
+  const query = url.searchParams.get('query');
+
+  if (!query || query.length < 2) {
+    res.status(400).json({ error: 'Query must be at least 2 characters' });
+    return;
+  }
+
   try {
-    const { searchParams } = new URL(request.url);
-    const query = searchParams.get('query');
-    
-    if (!query || query.length < 2) {
-      return NextResponse.json(
-        { error: 'Query must be at least 2 characters' },
-        { status: 400 }
-      );
-    }
-
     // Get TMDB API key from environment variables
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) {
@@ -46,13 +59,10 @@ export async function GET(request) {
         description: item.overview
       }));
 
-    return NextResponse.json({ results });
+    res.status(200).json({ results });
     
   } catch (error) {
     console.error('Search API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    res.status(500).json({ error: 'Internal server error' });
   }
 }

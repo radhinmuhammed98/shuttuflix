@@ -161,26 +161,58 @@
 
     // Load player with proxy
 // Replace your loadPlayer function with this
+// Updated loadPlayer function with better proxy handling
 function loadPlayer(id, mediaType) {
-  // Use direct VidKing embed with ad-reducing parameters
   const vidkingUrl = mediaType === 'movie' 
-    ? `https://www.vidking.net/embed/movie/${id}?autoPlay=true&color=ff0000&ads=0&preroll=0`
-    : `https://www.vidking.net/embed/tv/${id}/1/1?autoPlay=true&color=ff0000&ads=0&preroll=0&nextEpisode=true&episodeSelector=true`;
+    ? `https://www.vidking.net/embed/movie/${id}?autoPlay=true&color=ff0000`
+    : `https://www.vidking.net/embed/tv/${id}/1/1?autoPlay=true&color=ff0000&nextEpisode=true&episodeSelector=true`;
+  
+  const proxyUrl = `/api/proxy?url=${encodeURIComponent(vidkingUrl)}`;
   
   const videoContainer = getEl('video-container');
   if (videoContainer) {
+    // Show loading state
+    videoContainer.innerHTML = `
+      <div class="player-loading">
+        <div class="spinner"></div>
+        <p>Loading ad-free player...</p>
+      </div>
+    `;
+    
+    // Load the proxied content
     videoContainer.innerHTML = `
       <iframe 
-        src="${vidkingUrl}" 
+        src="${proxyUrl}" 
         allowfullscreen 
-        style="width:100%;height:100%;border:none;" 
-        allow="autoplay; fullscreen; picture-in-picture"
-        frameborder="0"
+        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+        scrolling="no"
       ></iframe>
     `;
   }
 }
 
+// Add player resize handler
+function setupPlayerResize() {
+  const videoContainer = getEl('video-container');
+  if (!videoContainer) return;
+  
+  function resizePlayer() {
+    const isMobile = window.innerWidth <= 768;
+    if (videoContainer.style.aspectRatio !== (isMobile ? '9/16' : '16/9')) {
+      videoContainer.style.aspectRatio = isMobile ? '9/16' : '16/9';
+    }
+  }
+  
+  window.addEventListener('resize', resizePlayer);
+  resizePlayer(); // Initial call
+}
+
+// Call this in your DOMContentLoaded handler
+document.addEventListener('DOMContentLoaded', function() {
+  loadCatalog();
+  setupEventListeners();
+  setupPlayerResize(); // Add this line
+});
     // Close player
     function closePlayer() {
       const modal = getEl('player-modal');

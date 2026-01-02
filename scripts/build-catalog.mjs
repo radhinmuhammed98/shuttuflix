@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 // 🔑 REPLACE WITH YOUR TMDB API KEY
-const TMDB_API_KEY = 'your_tmdb_api_key_here';
+const TMDB_API_KEY = '930f5673a91af78bd7537f37f0c62555';
 
 async function fetchWithRetry(url, retries = 3) {
   for (let i = 0; i < retries; i++) {

@@ -480,3 +480,35 @@ header {
 .video-container video::-webkit-media-controls {
   background-color: rgba(0, 0, 0, 0.7);
 }
+
+.video-container {
+  position: relative;
+  width: 100%;
+  min-height: 400px;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-video {
+  text-align: center;
+  color: white;
+}
+
+.loading-video .spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(252, 129, 181, 0.3);
+  border-top: 3px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px;
+}
+
+.video-container video {
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  outline: none;
+}

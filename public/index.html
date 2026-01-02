@@ -4,63 +4,73 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ShuttuFlix</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Fix CSP by loading resources properly -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
-  <!-- Add this to your head section -->
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
+  <!-- Progress bar -->
+  <div class="progress-container">
+    <div class="progress-bar" id="progress-bar"></div>
+  </div>
+
   <!-- Header -->
   <header>
     <div class="container">
       <div class="header-content">
         <a href="#" class="logo">
           <span class="logo-icon">🎀</span>
-          <span>SHUTTUFLIX</span>
+          <span>SHUTTUF LIX</span>
         </a>
         <div class="search-container">
           <i class="fas fa-search search-icon"></i>
-          <input type="text" id="search" class="search-box" placeholder="Search movies & shows..." />
+          <input type="text" id="search" class="search-box" placeholder="Search 1000+ movies & shows..." />
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Loading Element (Outside Grid) -->
-  <div id="loading-container" class="loading-container">
-    <div class="loading">
-      <div class="spinner"></div>
-    </div>
-  </div>
-
-  <main class="container">
+  <div class="container">
     <div class="section">
       <h2 class="section-title"><i class="fas fa-fire"></i> Trending Now</h2>
       <div id="grid-container" class="grid"></div>
     </div>
-  </main>
+  </div>
 
+  <div id="loading" class="loading" style="display: none;">
+    <div class="spinner"></div>
+  </div>
+  
   <div id="no-results" class="no-results" style="display: none;">
     <div class="no-results-icon">🔍</div>
     <p>No results found. Try another search.</p>
   </div>
 
-<!-- Player Modal - Fixed Version -->
-<div id="player-modal" class="modal">
-  <button class="favorites-btn">🤍</button>
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2 class="modal-title" id="modal-title">Movie Title</h2>
-      <button class="close-btn" id="close-modal">&times;</button>
+  <!-- Player Modal -->
+  <div id="player-modal" class="modal">
+    <button class="favorites-btn">🤍</button>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Movie Title</h2>
+        <button class="close-btn" id="close-modal">&times;</button>
+      </div>
+      <div id="video-container" class="video-container">
+        <!-- Player will load here -->
+      </div>
+      <div class="player-controls">
+        <button class="control-btn" id="prev-source">
+          <i class="fas fa-arrow-left"></i> Previous Source
+        </button>
+        <button class="control-btn" id="next-source">
+          Next Source <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
     </div>
-    <div id="video-container" style="width:100%;height:80vh;min-height:400px;background:#000;position:relative;">
-  <!-- Player loads here -->
-</div>
   </div>
-</div>
 
-  <!-- Scripts -->
+  <!-- Scripts - Load after DOM is ready -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script>
     // Global variables
     let CATALOG = [];
@@ -69,24 +79,33 @@
     let CURRENT_TITLE = null;
     const FAVORITES_KEY = 'shuttuflix-favorites';
     let favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+    let currentSourceIndex = 0;
+    let playerInstance = null;
 
-    // Safe DOM element getter
-    function getEl(id) {
-      return document.getElementById(id);
-    }
+    // DOM Elements
+    const gridContainer = document.getElementById('grid-container');
+    const noResultsEl = document.getElementById('no-results');
+    const loadingEl = document.getElementById('loading');
+    const searchInput = document.getElementById('search');
+    const modal = document.getElementById('player-modal');
+    const closeModalBtn = document.getElementById('close-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const videoContainer = document.getElementById('video-container');
+    const favoritesBtn = document.querySelector('.favorites-btn');
+    const prevSourceBtn = document.getElementById('prev-source');
+    const nextSourceBtn = document.getElementById('next-source');
+    const progressBar = document.getElementById('progress-bar');
 
     // Initialize
     document.addEventListener('DOMContentLoaded', function() {
       loadCatalog();
       setupEventListeners();
+      setupPlayerResize();
     });
 
     // Load catalog
     function loadCatalog() {
-      const loadingContainer = getEl('loading-container');
-      if (loadingContainer) {
-        loadingContainer.style.display = 'block';
-      }
+      showLoading();
       
       fetch('/data/catalog.json')
         .then(response => {
@@ -98,24 +117,17 @@
         .then(data => {
           CATALOG = data;
           renderCatalog(CATALOG);
-          if (loadingContainer) {
-            loadingContainer.style.display = 'none';
-          }
+          hideLoading();
         })
         .catch(error => {
           console.error('Error loading catalog:', error);
-          showError('Failed to load content');
-          if (loadingContainer) {
-            loadingContainer.style.display = 'none';
-          }
+          showError('Failed to load content. Please refresh the page.');
+          hideLoading();
         });
     }
 
     // Render catalog
     function renderCatalog(items) {
-      const gridContainer = getEl('grid-container');
-      const noResultsEl = getEl('no-results');
-      
       if (!gridContainer) return;
       
       if (!items || items.length === 0) {
@@ -123,8 +135,7 @@
         return;
       }
       
-      if (noResultsEl) noResultsEl.style.display = 'none';
-      
+      hideNoResults();
       gridContainer.innerHTML = items.slice(0, 100).map(item => `
         <div class="card" data-id="${item.id}" data-type="${item.mediaType}" data-title="${item.title}">
           <img class="poster" src="${item.poster}" alt="${item.title}">
@@ -145,9 +156,6 @@
 
     // Open player
     function openPlayer(id, mediaType, title) {
-      const modal = getEl('player-modal');
-      const modalTitle = getEl('modal-title');
-      
       CURRENT_ID = id;
       CURRENT_MEDIA_TYPE = mediaType;
       CURRENT_TITLE = title;
@@ -158,130 +166,126 @@
         document.body.style.overflow = 'hidden';
       }
       
-      loadPlayer(id, mediaType);
+      // Reset source index
+      currentSourceIndex = 0;
+      
+      // Load sources
+      loadSources();
     }
 
-function loadPlayer(id, mediaType) {
-  const sources = [
-    // Primary: VidSrc (fewest ads)
-    {
-      url: mediaType === 'movie' 
-        ? `https://vidsrc.to/embed/movie/${id}?autostart=true`
-        : `https://vidsrc.to/embed/tv/${id}/1/1?autostart=true`,
-      name: 'VidSrc'
-    },
-    // Fallback 1: F2Movies
-    {
-      url: mediaType === 'movie' 
-        ? `https://f2movies.to/movie/${id}?autostart=true`
-        : `https://f2movies.to/tv/${id}/1/1?autostart=true`,
-      name: 'F2Movies'
-    },
-    // Fallback 2: 2Embed
-    {
-      url: `https://www.2embed.cc/embed/${getImdbId(id)}`,
-      name: '2Embed'
+    // Load sources
+    function loadSources() {
+      if (!CURRENT_ID || !CURRENT_MEDIA_TYPE) return;
+      
+      showLoading();
+      
+      // Try sources in order
+      const sources = [
+        {
+          name: 'VidSrc',
+          url: CURRENT_MEDIA_TYPE === 'movie' 
+            ? `https://vidsrc.to/embed/movie/${CURRENT_ID}`
+            : `https://vidsrc.to/embed/tv/${CURRENT_ID}/1/1`
+        },
+        {
+          name: '2Embed',
+          url: `https://www.2embed.cc/embed/${CURRENT_ID}`
+        },
+        {
+          name: 'F2Movies',
+          url: CURRENT_MEDIA_TYPE === 'movie' 
+            ? `https://f2movies.to/movie/${CURRENT_ID}`
+            : `https://f2movies.to/tv/${CURRENT_ID}/1/1`
+        }
+      ];
+      
+      loadSource(sources, currentSourceIndex);
     }
-  ];
 
-  const videoContainer = document.getElementById('video-container');
-  if (videoContainer) {
-    // Try sources in order
-    let currentSource = 0;
-    
-    function trySource() {
-      if (currentSource >= sources.length) {
-        videoContainer.innerHTML = '<div style="color:white;text-align:center;padding:40px;">All sources failed. Please try again later.</div>';
+    // Load source
+    function loadSource(sources, index) {
+      if (index >= sources.length) {
+        hideLoading();
+        videoContainer.innerHTML = `
+          <div style="color: white; text-align: center; padding: 40px; height: 100%;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 20px;"></i>
+            <p>All sources failed. Please try again later.</p>
+            <button onclick="closePlayer()" style="margin-top: 20px; background: #fc81b5; border: none; padding: 10px 20px; border-radius: 24px; color: white; cursor: pointer;">
+              Close
+            </button>
+          </div>
+        `;
         return;
       }
       
-      videoContainer.innerHTML = `
-        <iframe 
-          src="${sources[currentSource].url}" 
-          style="width:100%;height:100%;border:none;"
-          allow="autoplay; fullscreen; picture-in-picture"
-          allowfullscreen
-          frameborder="0"
-          onerror="this.parentElement.__sourceIndex = ${currentSource + 1}; this.parentElement.__retry = () => { document.getElementById('video-container').innerHTML = ''; trySource.call(this.parentElement); }; setTimeout(this.parentElement.__retry, 3000);"
-        ></iframe>
-      `;
+      const source = sources[index];
       
-      // Add source indicator
-      const indicator = document.createElement('div');
-      indicator.style.position = 'absolute';
-      indicator.style.bottom = '10px';
-      indicator.style.right = '10px';
-      indicator.style.background = 'rgba(0,0,0,0.7)';
-      indicator.style.color = 'white';
-      indicator.style.padding = '4px 8px';
-      indicator.style.borderRadius = '4px';
-      indicator.style.fontSize = '12px';
-      indicator.textContent = `Source: ${sources[currentSource].name}`;
-      videoContainer.appendChild(indicator);
+      // Create iframe
+      const iframe = document.createElement('iframe');
+      iframe.src = source.url;
+      iframe.allow = 'autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write';
+      iframe.allowFullscreen = true;
+      iframe.frameBorder = '0';
+      iframe.style.width = '100%';
+      iframe.style.height = '100%';
+      iframe.style.border = 'none';
+      iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-presentation allow-top-navigation-by-user-activation');
       
-      currentSource++;
+      // Clear container and add iframe
+      videoContainer.innerHTML = '';
+      videoContainer.appendChild(iframe);
+      
+      // Update source indicator
+      updateSourceIndicator(source.name, index + 1, sources.length);
+      
+      // Hide loading after a short delay
+      setTimeout(hideLoading, 2000);
+      
+      // Set up error handling
+      iframe.onload = function() {
+        hideLoading();
+      };
+      
+      iframe.onerror = function() {
+        hideLoading();
+        if (index + 1 < sources.length) {
+          setTimeout(() => loadSource(sources, index + 1), 1000);
+        }
+      };
     }
-    
-    trySource();
-  }
-}
 
-// You'll need to convert TMDB ID to IMDb ID for 2Embed
-// For now, use a placeholder function
-function getImdbId(tmdbId) {
-  // In a real app, you'd cache these mappings or use TMDB API
-  const idMap = {
-    '550': 'tt0137523', // Fight Club
-    '66732': 'tt4574334', // Stranger Things
-    // Add more mappings as needed
-  };
-  return idMap[tmdbId] || 'tt0137523'; // Default to Fight Club
-}
-// Add player resize handler
-function setupPlayerResize() {
-  const videoContainer = getEl('video-container');
-  if (!videoContainer) return;
-  
-  function resizePlayer() {
-    const isMobile = window.innerWidth <= 768;
-    if (videoContainer.style.aspectRatio !== (isMobile ? '9/16' : '16/9')) {
-      videoContainer.style.aspectRatio = isMobile ? '9/16' : '16/9';
+    // Update source indicator
+    function updateSourceIndicator(name, current, total) {
+      const indicator = document.getElementById('source-indicator');
+      if (indicator) {
+        indicator.innerHTML = `<span>Source ${current}/${total}: ${name}</span>`;
+        indicator.style.display = 'block';
+      }
     }
-  }
-  
-  window.addEventListener('resize', resizePlayer);
-  resizePlayer(); // Initial call
-}
 
-// Call this in your DOMContentLoaded handler
-document.addEventListener('DOMContentLoaded', function() {
-  loadCatalog();
-  setupEventListeners();
-  setupPlayerResize(); // Add this line
-});
     // Close player
     function closePlayer() {
-      const modal = getEl('player-modal');
-      const videoContainer = getEl('video-container');
-      
       if (modal) {
         modal.classList.remove('active');
         document.body.style.overflow = 'auto';
       }
+      
       if (videoContainer) {
         videoContainer.innerHTML = '';
       }
+      
       CURRENT_ID = null;
       CURRENT_MEDIA_TYPE = null;
       CURRENT_TITLE = null;
+      currentSourceIndex = 0;
     }
 
-    // Toggle favorites
+    // Toggle favorite
     function toggleFavorite() {
-      const favoritesBtn = document.querySelector('.favorites-btn');
       if (!CURRENT_ID || !favoritesBtn) return;
       
       const isFavorite = favorites.includes(CURRENT_ID);
+      
       if (isFavorite) {
         favorites = favorites.filter(id => id !== CURRENT_ID);
         favoritesBtn.textContent = '🤍';
@@ -293,26 +297,21 @@ document.addEventListener('DOMContentLoaded', function() {
       localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
     }
 
-    // Search
+    // Setup event listeners
     function setupEventListeners() {
-      const closeModalBtn = getEl('close-modal');
-      const modal = getEl('player-modal');
-      const searchInput = getEl('search');
-      const favoritesBtn = document.querySelector('.favorites-btn');
-      
       // Close modal button
       if (closeModalBtn) {
         closeModalBtn.addEventListener('click', closePlayer);
       }
       
-      // Close modal on backdrop click
+      // Close modal when clicking outside
       if (modal) {
         modal.addEventListener('click', function(e) {
           if (e.target === modal) closePlayer();
         });
       }
       
-      // ESC key
+      // Close with ESC key
       document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && modal && modal.classList.contains('active')) {
           closePlayer();
@@ -324,9 +323,26 @@ document.addEventListener('DOMContentLoaded', function() {
         favoritesBtn.addEventListener('click', toggleFavorite);
       }
       
-      // Search input
+      // Source navigation
+      if (prevSourceBtn) {
+        prevSourceBtn.addEventListener('click', function() {
+          if (currentSourceIndex > 0) {
+            currentSourceIndex--;
+            loadSources();
+          }
+        });
+      }
+      
+      if (nextSourceBtn) {
+        nextSourceBtn.addEventListener('click', function() {
+          currentSourceIndex++;
+          loadSources();
+        });
+      }
+      
+      // Search functionality
+      let searchTimeout;
       if (searchInput) {
-        let searchTimeout;
         searchInput.addEventListener('input', function(e) {
           clearTimeout(searchTimeout);
           const query = e.target.value.trim();
@@ -336,50 +352,79 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
           }
           
-          searchTimeout = setTimeout(function() {
-            searchMovies(query).then(results => {
-              const noResultsEl = getEl('no-results');
-              const gridContainer = getEl('grid-container');
+          searchTimeout = setTimeout(async function() {
+            try {
+              const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+              const data = await response.json();
               
-              if (results.length === 0) {
-                if (noResultsEl) noResultsEl.style.display = 'block';
-                if (gridContainer) gridContainer.innerHTML = '';
+              if (data.results && data.results.length > 0) {
+                renderCatalog(data.results);
+                hideNoResults();
               } else {
-                renderCatalog(results);
-                if (noResultsEl) noResultsEl.style.display = 'none';
+                showNoResults(`No results found for "${query}"`);
               }
-            });
+            } catch (error) {
+              console.error('Search failed:', error);
+              showNoResults('Search failed. Please try again.');
+            }
           }, 500);
         });
       }
     }
 
-    // Search API call
-    function searchMovies(query) {
-      return new Promise((resolve) => {
-        fetch(`/api/search?query=${encodeURIComponent(query)}`)
-          .then(response => response.json())
-          .then(data => resolve(data.results || []))
-          .catch(error => {
-            console.error('Search failed:', error);
-            resolve([]);
-          });
-      });
+    // Show/hide loading
+    function showLoading() {
+      if (loadingEl) loadingEl.style.display = 'block';
+    }
+    
+    function hideLoading() {
+      if (loadingEl) loadingEl.style.display = 'none';
     }
 
-    // Show error
-    function showError(message) {
-      const noResultsEl = getEl('no-results');
-      const gridContainer = getEl('grid-container');
-      
+    // Show/hide no results
+    function showNoResults(message = 'No results found.') {
       if (noResultsEl) {
-        noResultsEl.innerHTML = `<div class="no-results-icon">⚠️</div><p>${message}</p>`;
+        noResultsEl.innerHTML = `
+          <div class="no-results-icon">🔍</div>
+          <p>${message}</p>
+        `;
         noResultsEl.style.display = 'block';
       }
-      if (gridContainer) {
-        gridContainer.innerHTML = '';
-      }
+      if (gridContainer) gridContainer.innerHTML = '';
     }
+    
+    function hideNoResults() {
+      if (noResultsEl) noResultsEl.style.display = 'none';
+    }
+
+    function showError(message) {
+      showNoResults(message);
+    }
+
+    // Player resize handler
+    function setupPlayerResize() {
+      function resizePlayer() {
+        const isMobile = window.innerWidth <= 768;
+        const container = document.getElementById('video-container');
+        if (container) {
+          container.style.paddingBottom = isMobile ? '177.78%' : '56.25%'; // 9:16 for mobile, 16:9 for desktop
+        }
+      }
+      
+      window.addEventListener('resize', resizePlayer);
+      resizePlayer(); // Initial call
+    }
+
+    // Progress bar
+    window.addEventListener('scroll', function() {
+      const scrollTop = document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (scrollTop / scrollHeight) * 100;
+      
+      if (progressBar) {
+        progressBar.style.width = `${scrolled}%`;
+      }
+    });
   </script>
 </body>
 </html>

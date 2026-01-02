@@ -1,4 +1,8 @@
 {
+  "outputDirectory": "public",
+
+  "buildCommand": "npm run build",
+
   "headers": [
     {
       "source": "/api/(.*)",
@@ -18,15 +22,12 @@
       ]
     }
   ],
-  "routes": [
-    { "src": "/api/sources", "dest": "/api/sources.js" },
-    { "src": "/api/proxy", "dest": "/api/proxy.js" },
-    { "src": "/api/search", "dest": "/api/search.js" },
-    { "src": "/data/(.*)", "headers": { "content-type": "application/json" } },
-    { "src": "/css/(.*)", "headers": { "content-type": "text/css" } },
-    { "src": "/js/(.*)", "headers": { "content-type": "application/javascript" } },
-    { "src": "/(.*)", "dest": "/index.html" }
-  ],
-  "buildCommand": "npm run build",
-  "outputDirectory": "public"
+
+  "rewrites": [
+    { "source": "/api/sources", "destination": "/api/sources.js" },
+    { "source": "/api/proxy", "destination": "/api/proxy.js" },
+    { "source": "/api/search", "destination": "/api/search.js" },
+
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

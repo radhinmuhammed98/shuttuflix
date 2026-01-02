@@ -160,28 +160,81 @@
     }
 
 function loadPlayer(id, mediaType) {
-  // Use the ORIGINAL VidKing URL (not the clean one)
-  const vidkingUrl = mediaType === 'movie' 
-    ? `https://www.vidking.net/embed/movie/${id}`
-    : `https://www.vidking.net/embed/tv/${id}/1/1?nextEpisode=true&episodeSelector=true`;
-  
-  // Route EVERYTHING through your proxy
-  const proxyUrl = `/api/proxy?url=${encodeURIComponent(vidkingUrl)}`;
-  
+  const sources = [
+    // Primary: VidSrc (fewest ads)
+    {
+      url: mediaType === 'movie' 
+        ? `https://vidsrc.to/embed/movie/${id}?autostart=true`
+        : `https://vidsrc.to/embed/tv/${id}/1/1?autostart=true`,
+      name: 'VidSrc'
+    },
+    // Fallback 1: F2Movies
+    {
+      url: mediaType === 'movie' 
+        ? `https://f2movies.to/movie/${id}?autostart=true`
+        : `https://f2movies.to/tv/${id}/1/1?autostart=true`,
+      name: 'F2Movies'
+    },
+    // Fallback 2: 2Embed
+    {
+      url: `https://www.2embed.cc/embed/${getImdbId(id)}`,
+      name: '2Embed'
+    }
+  ];
+
   const videoContainer = document.getElementById('video-container');
   if (videoContainer) {
-    videoContainer.innerHTML = `
-      <iframe 
-        src="${proxyUrl}" 
-        style="width:100%;height:100%;border:none;"
-        allow="autoplay; fullscreen; picture-in-picture"
-        allowfullscreen
-        scrolling="no"
-      ></iframe>
-    `;
+    // Try sources in order
+    let currentSource = 0;
+    
+    function trySource() {
+      if (currentSource >= sources.length) {
+        videoContainer.innerHTML = '<div style="color:white;text-align:center;padding:40px;">All sources failed. Please try again later.</div>';
+        return;
+      }
+      
+      videoContainer.innerHTML = `
+        <iframe 
+          src="${sources[currentSource].url}" 
+          style="width:100%;height:100%;border:none;"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowfullscreen
+          frameborder="0"
+          onerror="this.parentElement.__sourceIndex = ${currentSource + 1}; this.parentElement.__retry = () => { document.getElementById('video-container').innerHTML = ''; trySource.call(this.parentElement); }; setTimeout(this.parentElement.__retry, 3000);"
+        ></iframe>
+      `;
+      
+      // Add source indicator
+      const indicator = document.createElement('div');
+      indicator.style.position = 'absolute';
+      indicator.style.bottom = '10px';
+      indicator.style.right = '10px';
+      indicator.style.background = 'rgba(0,0,0,0.7)';
+      indicator.style.color = 'white';
+      indicator.style.padding = '4px 8px';
+      indicator.style.borderRadius = '4px';
+      indicator.style.fontSize = '12px';
+      indicator.textContent = `Source: ${sources[currentSource].name}`;
+      videoContainer.appendChild(indicator);
+      
+      currentSource++;
+    }
+    
+    trySource();
   }
 }
 
+// You'll need to convert TMDB ID to IMDb ID for 2Embed
+// For now, use a placeholder function
+function getImdbId(tmdbId) {
+  // In a real app, you'd cache these mappings or use TMDB API
+  const idMap = {
+    '550': 'tt0137523', // Fight Club
+    '66732': 'tt4574334', // Stranger Things
+    // Add more mappings as needed
+  };
+  return idMap[tmdbId] || 'tt0137523'; // Default to Fight Club
+}
 // Add player resize handler
 function setupPlayerResize() {
   const videoContainer = getEl('video-container');

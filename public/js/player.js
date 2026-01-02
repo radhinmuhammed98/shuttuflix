@@ -3,7 +3,8 @@ let CURRENT_MEDIA_TYPE = null;
 const FAVORITES_KEY = 'shuttuflix-favorites';
 let favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
 
-export function openPlayer(id, mediaType) {
+// Open player
+function openPlayer(id, mediaType) {
   CURRENT_ID = id;
   CURRENT_MEDIA_TYPE = mediaType;
   
@@ -24,13 +25,15 @@ export function openPlayer(id, mediaType) {
   updateFavoriteButton();
 }
 
-export function closePlayer() {
+// Close player
+function closePlayer() {
   document.getElementById('modal').classList.remove('active');
   document.getElementById('player').src = '';
   document.body.style.overflow = 'auto';
 }
 
-export function toggleFavorite() {
+// Toggle favorite
+function toggleFavorite() {
   if (!CURRENT_ID) return;
   
   const btn = document.querySelector('.favorites-btn');
@@ -47,6 +50,7 @@ export function toggleFavorite() {
   localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
 }
 
+// Update favorite button
 function updateFavoriteButton() {
   const btn = document.querySelector('.favorites-btn');
   if (!btn) return;
@@ -54,21 +58,23 @@ function updateFavoriteButton() {
   btn.textContent = favorites.includes(CURRENT_ID) ? '❤️' : '🤍';
 }
 
-export function initializePlayer() {
+// Initialize player
+function initializePlayer() {
   const modal = document.getElementById('modal');
   const closeModal = document.getElementById('close-modal');
-  const player = document.getElementById('player');
   
   // Close modal when clicking outside
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      closePlayer();
-    }
-  });
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closePlayer();
+      }
+    });
+  }
   
   // Close with ESC key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal.classList.contains('active')) {
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && modal && modal.classList.contains('active')) {
       closePlayer();
     }
   });
@@ -83,6 +89,7 @@ export function initializePlayer() {
   window.addEventListener('scroll', updateProgressBar);
 }
 
+// Progress bar
 function updateProgressBar() {
   const scrollTop = document.documentElement.scrollTop;
   const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;

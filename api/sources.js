@@ -16,66 +16,69 @@ export default async function (req, res) {
   }
 
   try {
-    // Get direct sources from public APIs
-    const sources = await fetchDirectSources(id, type);
+    // Try to get direct sources
+    const sources = await getDirectSources(id, type);
     res.status(200).json({ sources });
   } catch (error) {
-    console.error('Source fetch error:', error);
+    console.error('Source error:', error);
     res.status(500).json({ error: 'No sources available' });
   }
 }
 
-async function fetchDirectSources(tmdbId, type) {
+async function getDirectSources(tmdbId, type) {
   const sources = [];
   
-  // Method 1: Try vidsrc.to's direct API (no embed iframe)
+  // Method 1: VidSrc direct (most reliable)
   try {
-    const vidsrcResponse = await fetch(
-      `https://vidsrc.to/ajax/embed/${type}/${tmdbId}`
-    );
-    const vidsrcData = await vidsrcResponse.json();
-    
-    if (vidsrcData && vidsrcData.result && vidsrcData.result.sources) {
-      vidsrcData.result.sources.forEach(source => {
-        if (source.file && (source.file.includes('.m3u8') || source.file.includes('.mp4'))) {
-          sources.push({
-            url: source.file,
-            quality: source.label || 'auto',
-            type: source.file.includes('.m3u8') ? 'hls' : 'mp4',
-            provider: 'vidsrc-direct'
-          });
-        }
-      });
-    }
+    const vidSrcSources = await getVidSrcSources(tmdbId, type);
+    sources.push(...vidSrcSources);
   } catch (e) {
-    console.log('VidSrc direct failed:', e);
+    console.log('VidSrc failed');
   }
+  
+  // Method 2: F2Movies (if you can get IMDb ID)
+  // You'd need TMDB → IMDb conversion
+  
+  return sources;
+}
 
-  // Method 2: Try fembed API
-  try {
-    const fembedResponse = await fetch(
-      `https://fembed-hd.com/api/source/${tmdbId}`
-    );
-    const fembedData = await fembedResponse.json();
-    
-    if (fembedData && fembedData.success && fembedData.data) {
-      fembedData.data.forEach(track => {
-        if (track.file) {
-          sources.push({
-            url: track.file,
-            quality: track.label || 'auto',
-            type: 'mp4',
-            provider: 'fembed'
-          });
-        }
-      });
+async function getVidSrcSources(tmdbId, type) {
+  // This is the actual Cineby-like approach
+  const sources = [];
+  
+  // Step 1: Get the embed page
+  const embedUrl = `https://vidsrc.to/embed/${type}/${tmdbId}`;
+  const embedRes = await fetch(embedUrl, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
     }
-  } catch (e) {
-    console.log('Fembed failed:', e);
+  });
+  
+  if (!embedRes.ok) return [];
+  
+  const embedHtml = await embedRes.text();
+  
+  // Step 2: Extract the real source ID
+  const idMatch = embedHtml.match(/data-id="([^"]+)"/);
+  if (!idMatch) return [];
+  
+  const realId = idMatch[1];
+  
+  // Step 3: Get direct sources
+  const sourcesUrl = `https://vidsrc.to/ajax/embed/${type}/${realId}`;
+  const sourcesRes = await fetch(sourcesUrl);
+  const sourcesData = await sourcesRes.json();
+  
+  if (sourcesData && sourcesData.result && sourcesData.result.sources) {
+    return sourcesData.result.sources
+      .filter(s => s.file && (s.file.includes('.m3u8') || s.file.includes('.mp4')))
+      .map(s => ({
+        url: s.file,
+        quality: s.label || 'auto',
+        type: s.file.includes('.m3u8') ? 'hls' : 'mp4',
+        provider: 'vidsrc'
+      }));
   }
-
-  // Method 3: Try your own proxy to avoid CORS
-  // (This requires deploying a simple proxy server)
-
-  return sources.filter(source => source.url);
+  
+  return [];
 }

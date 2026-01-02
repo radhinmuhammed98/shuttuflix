@@ -2,99 +2,80 @@
 export default async function (req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
 
   if (req.method !== 'GET') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const url = new URL(req.url, `https://${req.headers.host}`);
   const id = url.searchParams.get('id');
   const type = url.searchParams.get('type') || 'movie';
-  const season = url.searchParams.get('season') || '1';
-  const episode = url.searchParams.get('episode') || '1';
 
   if (!id) {
-    res.status(400).json({ error: 'ID is required' });
-    return;
+    return res.status(400).json({ error: 'ID is required' });
   }
 
   try {
-    // Get sources from multiple providers
-    const sources = await getSources(id, type, season, episode);
+    // Get direct sources from public APIs
+    const sources = await fetchDirectSources(id, type);
     res.status(200).json({ sources });
   } catch (error) {
-    console.error('Sources API error:', error);
-    res.status(500).json({ error: 'Failed to fetch sources' });
+    console.error('Source fetch error:', error);
+    res.status(500).json({ error: 'No sources available' });
   }
 }
 
-async function getSources(id, type, season, episode) {
+async function fetchDirectSources(tmdbId, type) {
   const sources = [];
   
-  // Try different source providers in order of preference
-  const providers = [
-    { name: 'vidsrc', url: buildVidSrcUrl(id, type, season, episode) },
-    { name: '2embed', url: build2EmbedUrl(id) },
-    { name: 'streamlare', url: buildStreamlareUrl(id) }
-  ];
-  
-  // Add all providers to sources array
-  for (const provider of providers) {
-    if (provider.url) {
-      sources.push({
-        name: provider.name,
-        url: provider.url,
-        priority: getPriority(provider.name)
+  // Method 1: Try vidsrc.to's direct API (no embed iframe)
+  try {
+    const vidsrcResponse = await fetch(
+      `https://vidsrc.to/ajax/embed/${type}/${tmdbId}`
+    );
+    const vidsrcData = await vidsrcResponse.json();
+    
+    if (vidsrcData && vidsrcData.result && vidsrcData.result.sources) {
+      vidsrcData.result.sources.forEach(source => {
+        if (source.file && (source.file.includes('.m3u8') || source.file.includes('.mp4'))) {
+          sources.push({
+            url: source.file,
+            quality: source.label || 'auto',
+            type: source.file.includes('.m3u8') ? 'hls' : 'mp4',
+            provider: 'vidsrc-direct'
+          });
+        }
       });
     }
+  } catch (e) {
+    console.log('VidSrc direct failed:', e);
   }
-  
-  return sources.sort((a, b) => a.priority - b.priority);
-}
 
-function getPriority(provider) {
-  const priorityMap = {
-    'vidsrc': 1,
-    '2embed': 2,
-    'streamlare': 3
-  };
-  return priorityMap[provider] || 99;
-}
-
-function buildVidSrcUrl(id, type, season, episode) {
+  // Method 2: Try fembed API
   try {
-    if (type === 'movie') {
-      return `https://vidsrc.to/embed/movie/${id}`;
-    } else {
-      return `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`;
+    const fembedResponse = await fetch(
+      `https://fembed-hd.com/api/source/${tmdbId}`
+    );
+    const fembedData = await fembedResponse.json();
+    
+    if (fembedData && fembedData.success && fembedData.data) {
+      fembedData.data.forEach(track => {
+        if (track.file) {
+          sources.push({
+            url: track.file,
+            quality: track.label || 'auto',
+            type: 'mp4',
+            provider: 'fembed'
+          });
+        }
+      });
     }
-  } catch {
-    return null;
+  } catch (e) {
+    console.log('Fembed failed:', e);
   }
-}
 
-function build2EmbedUrl(id) {
-  try {
-    // You'll need to convert TMDB ID to IMDb ID
-    // For now, return null or implement conversion
-    return null;
-  } catch {
-    return null;
-  }
-}
+  // Method 3: Try your own proxy to avoid CORS
+  // (This requires deploying a simple proxy server)
 
-function buildStreamlareUrl(id) {
-  try {
-    // Streamlare uses different ID format
-    return null;
-  } catch {
-    return null;
-  }
+  return sources.filter(source => source.url);
 }

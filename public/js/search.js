@@ -1,44 +1,58 @@
-// public/js/search.js
-export async function searchMovies(query) {
-  if (query.length < 2) {
-    return [];
-  }
+// api/search.js
+import { NextResponse } from 'next/server';
 
+export async function GET(request) {
   try {
-    const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+    const { searchParams } = new URL(request.url);
+    const query = searchParams.get('query');
     
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || `Error ${response.status}`);
+    if (!query || query.length < 2) {
+      return NextResponse.json(
+        { error: 'Query must be at least 2 characters' },
+        { status: 400 }
+      );
     }
 
-    const data = await response.json();
-    return data.results || [];
-  } catch (error) {
-    console.error('Search failed:', error);
-    return [];
-  }
-}
-
-export function initializeSearch() {
-  const searchInput = document.getElementById('search');
-  let debounceTimer;
-  
-  searchInput.addEventListener('input', (e) => {
-    clearTimeout(debounceTimer);
-    const query = e.target.value.trim();
-    
-    if (query === '') {
-      // Show default catalog when search is cleared
-      window.dispatchEvent(new CustomEvent('show-default-catalog'));
-      return;
+    // Get TMDB API key from environment variables
+    const TMDB_API_KEY = process.env.TMDB_API_KEY;
+    if (!TMDB_API_KEY) {
+      throw new Error('TMDB_API_KEY not configured');
     }
+
+    // Fetch data from TMDB API
+    const tmdbRes = await fetch(
+      `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&include_adult=false`
+    );
+
+    if (!tmdbRes.ok) {
+      throw new Error(`TMDB API error: ${tmdbRes.status}`);
+    }
+
+    const tmdbData = await tmdbRes.json();
     
-    debounceTimer = setTimeout(async () => {
-      const results = await searchMovies(query);
-      window.dispatchEvent(new CustomEvent('search-results', { 
-        detail: { results, query } 
+    // Transform TMDB response to our format
+    const results = tmdbData.results
+      .filter(item => 
+        item.poster_path && 
+        (item.media_type === 'movie' || item.media_type === 'tv')
+      )
+      .slice(0, 20) // Limit to 20 results
+      .map(item => ({
+        id: item.id,
+        title: item.title || item.name,
+        poster: `https://image.tmdb.org/t/p/w185${item.poster_path}`,
+        mediaType: item.media_type,
+        year: item.release_date?.split('-')[0] || item.first_air_date?.split('-')[0] || '????',
+        description: item.overview
       }));
-    }, 500);
-  });
+
+    return NextResponse.json({ results });
+    
+  } catch (error) {
+    console.error('Search API error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 }

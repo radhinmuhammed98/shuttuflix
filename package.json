@@ -4,5 +4,8 @@
   "scripts": {
     "build": "node scripts/build-catalog.mjs",
     "dev": "npm run build"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3"
   }
 }

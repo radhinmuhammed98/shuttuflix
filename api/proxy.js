@@ -1,6 +1,5 @@
 // api/proxy.js
 export default async function (req, res) {
-  // Handle CORS and OPTIONS preflight
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -11,120 +10,78 @@ export default async function (req, res) {
   }
 
   if (req.method !== 'GET') {
-    return res.status(405).end('Method not allowed');
+    return res.status(405).end();
   }
 
   const url = new URL(req.url, `https://${req.headers.host}`);
-  const targetUrl = url.searchParams.get('url');
+  const targetUrl = decodeURIComponent(url.searchParams.get('url') || '');
 
   if (!targetUrl) {
-    return res.status(400).end('Missing URL parameter');
+    return res.status(400).end('Missing URL');
+  }
+
+  // BLOCK ALL AD AND TRACKING DOMAINS (Brave-style)
+  if (shouldBlockRequest(targetUrl)) {
+    return res.status(200).end(''); // Empty response for blocked requests
   }
 
   try {
-    // BLOCK AD REQUESTS - Brave-style filtering
-    if (isAdRequest(targetUrl)) {
-      res.status(200).end(''); // Return empty response for ads
-      return;
-    }
-
-    // Set proper headers based on file type
-    setContentTypeHeaders(targetUrl, res);
-
-    // Fetch the content with proper headers
     const response = await fetch(targetUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': getAcceptHeader(targetUrl),
         'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://www.vidking.net/',
-        'Origin': 'https://www.vidking.net'
+        'Referer': getReferer(targetUrl),
+        'Origin': getOrigin(targetUrl)
       }
     });
 
     if (!response.ok) {
-      // Handle 404/500 errors gracefully
-      if (response.status === 404) {
-        return res.status(404).end('Resource not found');
-      }
-      return res.status(response.status).end('Server error');
+      return res.status(response.status).end('Error');
     }
 
-    // Get response body
     const contentType = response.headers.get('content-type') || '';
-    let body;
-
-    if (contentType.includes('text/html') || contentType.includes('application/javascript')) {
-      body = await response.text();
-      
-      // For HTML pages, rewrite URLs to go through our proxy
-      if (contentType.includes('text/html')) {
-        body = rewriteHtmlUrls(body);
-      }
-      
-      // For JS files, remove ad-related code
-      if (contentType.includes('application/javascript')) {
-        body = removeAdCodeFromJS(body);
-      }
-      
+    
+    // Handle different content types
+    if (contentType.includes('text/html')) {
+      let html = await response.text();
+      html = cleanHtml(html);
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    } else if (contentType.includes('application/json')) {
-      body = await response.json();
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    } else {
-      body = await response.arrayBuffer();
-      res.setHeader('Content-Type', contentType);
+      res.status(200).send(html);
+    } 
+    else if (contentType.includes('application/javascript')) {
+      let js = await response.text();
+      js = cleanJavaScript(js);
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      res.status(200).send(js);
     }
-
-    res.status(200).send(body);
+    else if (contentType.includes('text/css')) {
+      let css = await response.text();
+      css = cleanCSS(css);
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      res.status(200).send(css);
+    }
+    else {
+      // Binary content (images, videos, etc.)
+      const buffer = await response.arrayBuffer();
+      res.setHeader('Content-Type', contentType);
+      res.status(200).send(Buffer.from(buffer));
+    }
 
   } catch (error) {
-    console.error('Proxy error:', error);
-    res.status(500).end('Proxy failed');
+    console.error('Proxy error for:', targetUrl, error.message);
+    res.status(500).end('Proxy error');
   }
 }
 
-// Brave-style ad blocking rules
-function isAdRequest(url) {
-  const adPatterns = [
-    /ad[sx]?([0-9]*|server|manager|network)/i,
-    /ads?\.([a-z0-9-]+\.)?(com|net|org|info|xyz|top|club|site|online|tech|space|bid|loan|win|party|science)$/i,
-    /ad([0-9]*|server|manager|network)[a-z0-9-]*\.(com|net|org|info|xyz|top|club|site|online|tech|space|bid|loan|win|party|science)$/i,
-    /track(ing)?([0-9]*|-server|-pixel)/i,
-    /analytics?/i,
-    /popup/i,
-    /interstitial/i,
-    /pre-roll/i,
-    /mid-roll/i,
-    /post-roll/i,
-    /click(under|tracker)/i,
-    /offer/i,
-    /banner/i,
-    /doubleclick/i,
-    /googlesyndication/i,
-    /googleadservices/i,
-    /amazon-adsystem/i,
-    /taboola/i,
-    /outbrain/i,
-    /popads/i,
-    /propellerads/i,
-    /exoclick/i,
-    /adcolony/i,
-    /unityads/i,
-    /admob/i,
-    /inmobi/i,
-    /vungle/i,
-    /chartboost/i,
-    /applovin/i,
-    /appnext/i,
-    /startapp/i,
-    /facebook\.com\/ads/i,
-    /facebook\.com\/tr/i,
-    /google\.com\/ads/i,
-    /google\.com\/analytics/i,
-    /googletagmanager\.com/i,
+// Comprehensive ad blocking rules
+function shouldBlockRequest(url) {
+  const blockedPatterns = [
+    // Ad networks
+    /doubleclick\.net/i,
     /googlesyndication\.com/i,
     /googleadservices\.com/i,
+    /adservice\.google\./i,
     /amazon-adsystem\.com/i,
     /taboola\.com/i,
     /outbrain\.com/i,
@@ -132,124 +89,145 @@ function isAdRequest(url) {
     /propellerads\.com/i,
     /exoclick\.com/i,
     /adcolony\.com/i,
-    /unityads\.unity3d\.com/i,
-    /admob\.com/i,
+    /unityads\.com/i,
     /inmobi\.com/i,
     /vungle\.com/i,
     /chartboost\.com/i,
     /applovin\.com/i,
-    /appnext\.com/i,
     /startapp\.com/i,
-    /static\.ads-twitter\.com/i,
-    /static\.adsafeprotected\.com/i,
+    /facebook\.com\/ads/i,
+    /facebook\.com\/tr/i,
+    
+    // Tracking/analytics
+    /google-analytics\.com/i,
+    /googletagmanager\.com/i,
+    /analytics\.google\.com/i,
+    /stats\.wordpress\.com/i,
+    /pixel\.facebook\.com/i,
+    /connect\.facebook\.net/i,
+    
+    // VidKing-specific ads
     /ads\.vidking\.net/i,
-    /adservice\.google\.com/i,
-    /adservice\.google\.com\.ar/i,
-    /adservice\.google\.com\.au/i,
-    /adservice\.google\.com\.br/i,
-    /adservice\.google\.com\.mx/i
+    /vidking\.net\/.*ad/i,
+    /vidking\.net\/.*popup/i,
+    /vidking\.net\/.*track/i,
+    /vidking\.net\/.*analytics/i,
+    
+    // Cineby private APIs (block these to prevent 500 errors)
+    /api\.videasy\.net/i,
+    /videasy\.net/i,
+    /myflixerzupcloud/i,
+    
+    // Generic ad patterns
+    /.*ad[sx]?(\d*|server|manager|network).*\.(com|net|org|info|xyz|top|club|site|online|tech|space|bid|loan|win|party|science)$/i,
+    /.*track(ing)?(\d*|-server|-pixel).*\.(com|net|org|info|xyz|top|club|site|online|tech|space|bid|loan|win|party|science)$/i,
+    /.*popup.*\.(com|net|org|info|xyz|top|club|site|online|tech|space|bid|loan|win|party|science)$/i,
+    /.*offer.*\.(com|net|org|info|xyz|top|club|site|online|tech|space|bid|loan|win|party|science)$/i
   ];
 
-  return adPatterns.some(pattern => pattern.test(url));
+  return blockedPatterns.some(pattern => pattern.test(url));
 }
 
-// Set proper content type headers
-function setContentTypeHeaders(url, res) {
-  const extension = url.split('.').pop().split('?')[0].toLowerCase();
-  
-  const contentTypes = {
-    'js': 'application/javascript',
-    'css': 'text/css',
-    'html': 'text/html',
-    'json': 'application/json',
-    'm3u8': 'application/vnd.apple.mpegurl',
-    'ts': 'video/MP2T',
-    'mp4': 'video/mp4',
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'png': 'image/png',
-    'gif': 'image/gif',
-    'webp': 'image/webp',
-    'svg': 'image/svg+xml',
-    'woff': 'font/woff',
-    'woff2': 'font/woff2',
-    'ttf': 'font/ttf',
-    'eot': 'application/vnd.ms-fontobject'
-  };
-
-  if (contentTypes[extension]) {
-    res.setHeader('Content-Type', `${contentTypes[extension]}; charset=utf-8`);
-  }
-}
-
-// Get proper Accept header based on URL
 function getAcceptHeader(url) {
   if (url.includes('.js') || url.includes('javascript')) {
     return 'application/javascript, */*;q=0.8';
-  } else if (url.includes('.css') || url.includes('stylesheet')) {
+  } else if (url.includes('.css')) {
     return 'text/css, */*;q=0.8';
-  } else if (url.includes('.json') || url.includes('json')) {
+  } else if (url.includes('.json')) {
     return 'application/json, */*;q=0.8';
-  } else if (url.includes('.m3u8') || url.includes('manifest')) {
+  } else if (url.includes('.m3u8')) {
     return 'application/vnd.apple.mpegurl, */*;q=0.8';
   } else if (url.includes('.mp4') || url.includes('video')) {
     return 'video/mp4, */*;q=0.8';
   }
-  return 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
+  return 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8';
 }
 
-// Rewrite HTML URLs to go through our proxy
-function rewriteHtmlUrls(html) {
-  // Rewrite script src attributes
-  html = html.replace(/src="(https?:\/\/[^"]*\.js[^"]*)"/g, (match, url) => {
-    return `src="/api/proxy?url=${encodeURIComponent(url)}"`;
+function getReferer(url) {
+  if (url.includes('vidking.net')) {
+    return 'https://www.vidking.net/';
+  }
+  return 'https://www.vidking.net/';
+}
+
+function getOrigin(url) {
+  if (url.includes('vidking.net')) {
+    return 'https://www.vidking.net';
+  }
+  return 'https://www.vidking.net';
+}
+
+// Clean HTML content
+function cleanHtml(html) {
+  // Remove all script tags that contain ad-related content
+  html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, (match) => {
+    const lowerMatch = match.toLowerCase();
+    if (lowerMatch.includes('ad') || lowerMatch.includes('popup') || 
+        lowerMatch.includes('track') || lowerMatch.includes('analytics') ||
+        lowerMatch.includes('click') || lowerMatch.includes('offer')) {
+      return ''; // Remove ad-related scripts
+    }
+    return match; // Keep other scripts
   });
+
+  // Remove ad divs and elements
+  html = html.replace(/<div[^>]*class="[^"]*(ad|popup|banner|track)[^"]*"[^>]*>[\s\S]*?<\/div>/gi, '');
+  html = html.replace(/<div[^>]*id="[^"]*(ad|popup|banner|track)[^"]*"[^>]*>[\s\S]*?<\/div>/gi, '');
   
-  // Rewrite link href attributes (for CSS)
-  html = html.replace(/href="(https?:\/\/[^"]*\.css[^"]*)"/g, (match, url) => {
-    return `href="/api/proxy?url=${encodeURIComponent(url)}"`;
-  });
+  // Remove onclick handlers
+  html = html.replace(/onclick="[^"]*"/gi, '');
+  html = html.replace(/onmousedown="[^"]*"/gi, '');
+  html = html.replace(/onmouseup="[^"]*"/gi, '');
   
-  // Rewrite iframe src attributes
-  html = html.replace(/src="(https?:\/\/[^"]*\.html[^"]*)"/g, (match, url) => {
-    return `src="/api/proxy?url=${encodeURIComponent(url)}"`;
-  });
+  // Remove tracking pixels
+  html = html.replace(/<img[^>]*src="[^"]*(track|pixel|analytics)[^"]*"[^>]*>/gi, '');
   
-  // Rewrite image src attributes
-  html = html.replace(/src="(https?:\/\/[^"]*\.(jpg|jpeg|png|gif|webp)[^"]*)"/g, (match, url) => {
-    return `src="/api/proxy?url=${encodeURIComponent(url)}"`;
-  });
-  
-  // Remove ad-related scripts and elements
-  html = html.replace(/<script[^>]*>.*?ad.*?<\/script>/g, '');
-  html = html.replace(/<script[^>]*>.*?pop.*?<\/script>/g, '');
-  html = html.replace(/<script[^>]*>.*?click.*?<\/script>/g, '');
-  html = html.replace(/<script[^>]*>.*?popup.*?<\/script>/g, '');
-  html = html.replace(/<div[^>]*class="[^"]*ad[^"]*"[^>]*>.*?<\/div>/g, '');
-  html = html.replace(/<div[^>]*id="[^"]*ad[^"]*"[^>]*>.*?<\/div>/g, '');
-  html = html.replace(/<div[^>]*class="[^"]*popup[^"]*"[^>]*>.*?<\/div>/g, '');
-  html = html.replace(/onclick="[^"]*"/g, '');
+  // Fix player container to be responsive
+  html = html.replace(/<div id="player"[^>]*>/, '<div id="player" style="width:100%;height:100vh;">');
   
   return html;
 }
 
-// Remove ad code from JavaScript files
-function removeAdCodeFromJS(js) {
+// Clean JavaScript content
+function cleanJavaScript(js) {
   // Remove ad-related function calls
-  js = js.replace(/ad[sx]?\([^\)]*\)/g, '');
-  js = js.replace(/showAd\([^\)]*\)/g, '');
-  js = js.replace(/loadAd\([^\)]*\)/g, '');
-  js = js.replace(/trackAd\([^\)]*\)/g, '');
-  js = js.replace(/popup\([^\)]*\)/g, '');
-  js = js.replace(/interstitial\([^\)]*\)/g, '');
+  js = js.replace(/ad[sx]?\([^)]*\)/g, '');
+  js = js.replace(/showAd\([^)]*\)/g, '');
+  js = js.replace(/loadAd\([^)]*\)/g, '');
+  js = js.replace(/track\([^)]*\)/g, '');
+  js = js.replace(/popup\([^)]*\)/g, '');
+  js = js.replace(/interstitial\([^)]*\)/g, '');
+  js = js.replace(/preRoll\([^)]*\)/g, '');
+  js = js.replace(/midRoll\([^)]*\)/g, '');
+  js = js.replace(/postRoll\([^)]*\)/g, '');
   
-  // Remove ad-related variables
-  js = js.replace(/var\s+ad[sx]?[a-z0-9]*\s*=\s*[^;]*;/g, '');
-  js = js.replace(/let\s+ad[sx]?[a-z0-9]*\s*=\s*[^;]*;/g, '');
-  js = js.replace(/const\s+ad[sx]?[a-z0-9]*\s*=\s*[^;]*;/g, '');
+  // Remove ad-related variables and functions
+  js = js.replace(/var\s+ad[sx]?[a-zA-Z0-9_]*\s*=[^;]*;/g, '');
+  js = js.replace(/let\s+ad[sx]?[a-zA-Z0-9_]*\s*=[^;]*;/g, '');
+  js = js.replace(/const\s+ad[sx]?[a-zA-Z0-9_]*\s*=[^;]*;/g, '');
+  js = js.replace(/function\s+ad[sx]?[a-zA-Z0-9_]*\s*\([^)]*\)\s*\{[^}]*\}/g, '');
   
-  // Remove ad-related event listeners
+  // Remove event listeners that trigger ads
   js = js.replace(/addEventListener\s*\(\s*['"]click['"][^,]*,\s*function\s*\([^)]*\)\s*\{[^}]*ad[^}]*\}/g, '');
   
+  // Remove Cineby private API calls
+  js = js.replace(/api\.videasy\.net/g, '');
+  js = js.replace(/videasy\.net/g, '');
+  
+  // Fix player sizing
+  js = js.replace(/player\.width\s*=\s*['"]\d+['"]/g, 'player.width = "100%"');
+  js = js.replace(/player\.height\s*=\s*['"]\d+['"]/g, 'player.height = "100%"');
+  
   return js;
+}
+
+// Clean CSS content
+function cleanCSS(css) {
+  // Remove ad-related styles
+  css = css.replace(/\.ad[sx]?[a-zA-Z0-9_-]*\s*\{[^}]*\}/g, '');
+  css = css.replace(/#ad[sx]?[a-zA-Z0-9_-]*\s*\{[^}]*\}/g, '');
+  css = css.replace(/\.popup[a-zA-Z0-9_-]*\s*\{[^}]*\}/g, '');
+  css = css.replace(/#popup[a-zA-Z0-9_-]*\s*\{[^}]*\}/g, '');
+  
+  return css;
 }

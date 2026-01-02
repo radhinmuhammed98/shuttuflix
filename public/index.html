@@ -52,19 +52,10 @@
   <div class="modal-content">
     <div class="modal-header">
       <h2 class="modal-title" id="modal-title">Movie Title</h2>
-      <button class="close-btn" id="close-modal" onclick="closePlayer()">&times;</button>
+      <button class="close-btn" onclick="closePlayer()">&times;</button>
     </div>
-    <div class="player-container">
-      <iframe id="player" class="player" allowfullscreen></iframe>
-      <div id="source-indicator" class="source-indicator" style="display: none;"></div>
-    </div>
-    <div class="player-controls">
-      <button class="control-btn" onclick="switchSource((currentSourceIndex - 1 + currentSources.length) % currentSources.length)">
-        <i class="fas fa-arrow-left"></i> Previous Source
-      </button>
-      <button class="control-btn" onclick="switchSource((currentSourceIndex + 1) % currentSources.length)">
-        Next Source <i class="fas fa-arrow-right"></i>
-      </button>
+    <div id="video-container" class="video-container" style="position: relative; width: 100%; padding-top: 56.25%;">
+      <!-- Video will be inserted here -->
     </div>
   </div>
 </div>

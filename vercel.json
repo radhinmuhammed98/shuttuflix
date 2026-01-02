@@ -1,8 +1,35 @@
 {
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, OPTIONS"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.jsdelivr.net/npm/hls.js; style-src 'self' 'unsafe-inline'; img-src 'self' https://image.tmdb.org data:; frame-src 'self'; media-src 'self' blob:; connect-src 'self' https://api.themoviedb.org https://*.vidsrc.to https://*.f2movies.to https://*.2embed.cc"
+        }
+      ]
+    }
+  ],
   "routes": [
+    { "src": "/api/sources", "dest": "/api/sources.js" },
+    { "src": "/api/proxy", "dest": "/api/proxy.js" },
     { "src": "/api/search", "dest": "/api/search.js" },
     { "src": "/data/(.*)", "headers": { "content-type": "application/json" } },
     { "src": "/css/(.*)", "headers": { "content-type": "text/css" } },
+    { "src": "/js/(.*)", "headers": { "content-type": "application/javascript" } },
     { "src": "/(.*)", "dest": "/index.html" }
   ],
   "buildCommand": "npm run build",

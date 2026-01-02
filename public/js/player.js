@@ -1,108 +1,136 @@
-// Custom Player with Source Switching
-let currentPlayer = null;
+// Clean HTML5 Player - No Ads!
+let currentVideo = null;
 let currentSources = [];
-let currentSourceIndex = 0;
 
 function openPlayer(id, mediaType, title = 'Movie') {
   document.getElementById('modal-title').textContent = title;
   document.getElementById('modal').classList.add('active');
   document.body.style.overflow = 'hidden';
   
-  // Load sources for this content
-  loadSources(id, mediaType);
+  // Load direct sources
+  loadDirectSources(id, mediaType);
 }
 
-async function loadSources(id, mediaType) {
+async function loadDirectSources(id, mediaType) {
   try {
     const response = await fetch(`/api/sources?id=${id}&type=${mediaType}`);
     const data = await response.json();
     
     if (data.sources && data.sources.length > 0) {
       currentSources = data.sources;
-      currentSourceIndex = 0;
-      switchSource(0);
+      playSource(0);
     } else {
-      showError('No sources available');
+      showError('No ad-free sources available');
     }
   } catch (error) {
-    console.error('Failed to load sources:', error);
-    showError('Failed to load video sources');
+    console.error('Source loading failed:', error);
+    showError('Failed to load video');
   }
 }
 
-function switchSource(index) {
-  if (index >= 0 && index < currentSources.length) {
-    currentSourceIndex = index;
-    const source = currentSources[index];
-    
-    // Create a clean iframe with ad-blocking parameters
-    const iframe = document.getElementById('player');
-    iframe.src = createCleanSourceUrl(source.url);
-    
-    // Update source indicator
-    updateSourceIndicator();
+function playSource(index) {
+  if (index >= currentSources.length) {
+    showError('All sources failed. Try again later.');
+    return;
   }
-}
-
-function createCleanSourceUrl(url) {
-  // Add parameters to minimize ads
-  const adBlockParams = [
-    'ads=0',
-    'preroll=0', 
-    'midroll=0',
-    'postroll=0',
-    'autoplayAds=0',
-    'autostart=true'
-  ];
   
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}${adBlockParams.join('&')}`;
+  const source = currentSources[index];
+  const videoContainer = document.getElementById('video-container');
+  videoContainer.innerHTML = '';
+  
+  if (source.type === 'hls') {
+    // HLS streaming (for .m3u8 files)
+    loadHLSPlayer(source.url, index);
+  } else {
+    // Direct MP4 playback
+    loadMP4Player(source.url, index);
+  }
 }
 
-function updateSourceIndicator() {
-  const indicator = document.getElementById('source-indicator');
-  if (indicator && currentSources.length > 1) {
-    indicator.innerHTML = `
-      <span>Source: ${currentSources[currentSourceIndex].name}</span>
-      ${currentSources.length > 1 ? 
-        `<button onclick="switchSource(${(currentSourceIndex + 1) % currentSources.length})">Next</button>` : 
-        ''}
-    `;
-    indicator.style.display = 'block';
-  }
+function loadHLSPlayer(url, sourceIndex) {
+  // Load HLS.js for .m3u8 support
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+  script.onload = () => {
+    const video = document.createElement('video');
+    video.controls = true;
+    video.style.width = '100%';
+    video.style.height = '100%';
+    video.style.backgroundColor = '#000';
+    
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        console.error('HLS Error:', data);
+        if (sourceIndex + 1 < currentSources.length) {
+          // Try next source
+          playSource(sourceIndex + 1);
+        }
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      // Safari support
+      video.src = url;
+      video.addEventListener('error', () => {
+        if (sourceIndex + 1 < currentSources.length) {
+          playSource(sourceIndex + 1);
+        }
+      });
+    }
+    
+    document.getElementById('video-container').appendChild(video);
+    currentVideo = video;
+  };
+  document.head.appendChild(script);
+}
+
+function loadMP4Player(url, sourceIndex) {
+  const video = document.createElement('video');
+  video.controls = true;
+  video.style.width = '100%';
+  video.style.height = '100%';
+  video.style.backgroundColor = '#000';
+  
+  const sourceEl = document.createElement('source');
+  sourceEl.src = url;
+  sourceEl.type = 'video/mp4';
+  video.appendChild(sourceEl);
+  
+  video.addEventListener('error', () => {
+    if (sourceIndex + 1 < currentSources.length) {
+      playSource(sourceIndex + 1);
+    }
+  });
+  
+  document.getElementById('video-container').appendChild(video);
+  currentVideo = video;
 }
 
 function showError(message) {
-  document.getElementById('player').src = '';
-  document.getElementById('player').innerHTML = `
-    <div style="color: white; text-align: center; padding: 40px;">
-      <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 20px;"></i>
-      <p>${message}</p>
-      <button onclick="closePlayer()" style="margin-top: 20px; background: #fc81b5; border: none; padding: 10px 20px; border-radius: 24px; color: white; cursor: pointer;">
-        Close
+  const container = document.getElementById('video-container');
+  container.innerHTML = `
+    <div style="color: white; text-align: center; padding: 40px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+      <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 20px; color: #fc81b5;"></i>
+      <p style="font-size: 1.2rem; margin-bottom: 20px;">${message}</p>
+      <button onclick="closePlayer()" style="background: #fc81b5; border: none; padding: 12px 24px; border-radius: 24px; color: white; font-weight: 600; cursor: pointer; font-size: 1rem;">
+        Close Player
       </button>
     </div>
   `;
 }
 
-// Keep existing functions
 function closePlayer() {
   document.getElementById('modal').classList.remove('active');
-  document.getElementById('player').src = '';
   document.body.style.overflow = 'auto';
-  currentPlayer = null;
+  if (currentVideo) {
+    currentVideo.pause();
+    currentVideo = null;
+  }
   currentSources = [];
-  currentSourceIndex = 0;
 }
 
-function toggleFavorite() {
-  // Your existing favorite logic
-}
-
-function updateFavoriteButton() {
-  // Your existing favorite button logic
-}
-
-function initializePlayer() {
-  // Your existing player initialization
-}
+// Keep your existing favorite functions
+function toggleFavorite() { /* your code */ }
+function updateFavoriteButton() { /* your code */ }
+function initializePlayer() { /* your code */ }

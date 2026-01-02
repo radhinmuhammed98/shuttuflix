@@ -1,44 +1,50 @@
-// public/js/search.js
-export async function searchMovies(query) {
-  if (query.length < 2) {
-    return [];
-  }
-
-  try {
-    const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || `Error ${response.status}`);
+// Global search function
+function searchMovies(query) {
+  return new Promise((resolve, reject) => {
+    if (query.length < 2) {
+      resolve([]);
+      return;
     }
 
-    const data = await response.json();
-    return data.results || [];
-  } catch (error) {
-    console.error('Search failed:', error);
-    return [];
-  }
+    fetch(`/api/search?query=${encodeURIComponent(query)}`)
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(errorData => {
+            throw new Error(errorData.error || `Error ${response.status}`);
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        resolve(data.results || []);
+      })
+      .catch(error => {
+        console.error('Search failed:', error);
+        resolve([]);
+      });
+  });
 }
 
-export function initializeSearch() {
+// Initialize search
+function initializeSearch() {
   const searchInput = document.getElementById('search');
   let debounceTimer;
   
-  searchInput.addEventListener('input', (e) => {
+  searchInput.addEventListener('input', function(e) {
     clearTimeout(debounceTimer);
     const query = e.target.value.trim();
     
     if (query === '') {
-      // Show default catalog when search is cleared
       window.dispatchEvent(new CustomEvent('show-default-catalog'));
       return;
     }
     
-    debounceTimer = setTimeout(async () => {
-      const results = await searchMovies(query);
-      window.dispatchEvent(new CustomEvent('search-results', { 
-        detail: { results, query } 
-      }));
+    debounceTimer = setTimeout(function() {
+      searchMovies(query).then(results => {
+        window.dispatchEvent(new CustomEvent('search-results', { 
+          detail: { results, query } 
+        }));
+      });
     }, 500);
   });
 }

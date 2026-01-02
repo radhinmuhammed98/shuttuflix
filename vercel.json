@@ -1,33 +1,34 @@
 {
-  "outputDirectory": "public",
-
-  "buildCommand": "npm run build",
-
   "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
-      ]
-    },
     {
       "source": "/(.*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.jsdelivr.net/npm/hls.js; style-src 'self' 'unsafe-inline'; img-src 'self' https://image.tmdb.org data:; frame-src https://*.vidsrc.to https://*.2embed.cc https://*.f2movies.to; media-src blob: https://*; connect-src 'self' https://api.themoviedb.org https://*.vidsrc.to https://*.f2movies.to https://*.2embed.cc"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' https://image.tmdb.org https://*.vidsrc.to https://*.2embed.cc https://*.f2movies.to data:; frame-src 'self' https://www.vidsrc.to https://vidsrc.to https://*.2embed.cc https://*.f2movies.to https://www.vidking.net; connect-src 'self' https://api.themoviedb.org https://*.vidsrc.to https://*.f2movies.to https://*.2embed.cc https://static.cloudflareinsights.com; media-src 'self' blob: https://*.vidsrc.to https://*.f2movies.to https://*.2embed.cc; object-src 'none'; base-uri 'self'; form-action 'self';"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
         }
       ]
     }
   ],
-
-  "rewrites": [
-    { "source": "/api/sources", "destination": "/api/sources.js" },
-    { "source": "/api/proxy", "destination": "/api/proxy.js" },
-    { "source": "/api/search", "destination": "/api/search.js" },
-
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  "routes": [
+    { "src": "/api/search", "dest": "/api/search.js" },
+    { "src": "/api/sources", "dest": "/api/sources.js" },
+    { "src": "/data/(.*)", "headers": { "content-type": "application/json" } },
+    { "src": "/css/(.*)", "headers": { "content-type": "text/css" } },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "public"
 }

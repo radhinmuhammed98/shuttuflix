@@ -1,17 +1,8 @@
 // api/search.js
 export default async function (req, res) {
-  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  // Only allow GET requests
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
@@ -26,13 +17,11 @@ export default async function (req, res) {
   }
 
   try {
-    // Get TMDB API key from environment variables
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) {
       throw new Error('TMDB_API_KEY not configured');
     }
 
-    // Fetch data from TMDB API
     const tmdbRes = await fetch(
       `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&include_adult=false`
     );
@@ -43,13 +32,9 @@ export default async function (req, res) {
 
     const tmdbData = await tmdbRes.json();
     
-    // Transform TMDB response to our format
     const results = tmdbData.results
-      .filter(item => 
-        item.poster_path && 
-        (item.media_type === 'movie' || item.media_type === 'tv')
-      )
-      .slice(0, 20) // Limit to 20 results
+      .filter(item => item.poster_path && (item.media_type === 'movie' || item.media_type === 'tv'))
+      .slice(0, 20)
       .map(item => ({
         id: item.id,
         title: item.title || item.name,

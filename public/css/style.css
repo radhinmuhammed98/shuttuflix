@@ -277,3 +277,28 @@ header {
     height: 270px;
   }
 }
+/* Loading Container */
+.loading-container {
+  display: none;
+  width: 100%;
+  text-align: center;
+  padding: 40px 0;
+}
+
+.loading {
+  display: inline-block;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(252, 129, 181, 0.3);
+  border-top: 3px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

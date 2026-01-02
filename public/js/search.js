@@ -1,3 +1,4 @@
+// public/js/search.js
 export async function searchMovies(query) {
   if (query.length < 2) {
     return [];
@@ -21,8 +22,8 @@ export async function searchMovies(query) {
 
 export function initializeSearch() {
   const searchInput = document.getElementById('search');
-  
   let debounceTimer;
+  
   searchInput.addEventListener('input', (e) => {
     clearTimeout(debounceTimer);
     const query = e.target.value.trim();
@@ -35,7 +36,9 @@ export function initializeSearch() {
     
     debounceTimer = setTimeout(async () => {
       const results = await searchMovies(query);
-      window.dispatchEvent(new CustomEvent('search-results', { detail: { results, query } }));
+      window.dispatchEvent(new CustomEvent('search-results', { 
+        detail: { results, query } 
+      }));
     }, 500);
   });
 }

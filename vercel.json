@@ -4,7 +4,6 @@
     { "src": "/api/proxy", "dest": "/api/proxy.js" },
     { "src": "/data/(.*)", "headers": { "content-type": "application/json" } },
     { "src": "/css/(.*)", "headers": { "content-type": "text/css" } },
-    { "src": "/js/(.*)", "headers": { "content-type": "application/javascript" } },
     { "src": "/(.*)", "dest": "/index.html" }
   ],
   "buildCommand": "npm run build",

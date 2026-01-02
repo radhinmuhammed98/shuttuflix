@@ -7,12 +7,13 @@ export function openPlayer(id, mediaType) {
   CURRENT_ID = id;
   CURRENT_MEDIA_TYPE = mediaType;
   
+  // Use VidSrc instead of VidKing for fewer ads
   let embedUrl;
   if (mediaType === 'movie') {
-    embedUrl = `https://www.vidking.net/embed/movie/${id}?autoPlay=true&color=ff0000`;
+    embedUrl = `https://vidsrc.to/embed/movie/${id}?autostart=true`;
   } else {
     // Default to season 1, episode 1 for TV shows
-    embedUrl = `https://www.vidking.net/embed/tv/${id}/1/1?autoPlay=true&color=ff0000&nextEpisode=true&episodeSelector=true`;
+    embedUrl = `https://vidsrc.to/embed/tv/${id}/1/1?autostart=true`;
   }
   
   document.getElementById('player').src = embedUrl;
@@ -76,5 +77,19 @@ export function initializePlayer() {
   const favoritesBtn = document.querySelector('.favorites-btn');
   if (favoritesBtn) {
     favoritesBtn.addEventListener('click', toggleFavorite);
+  }
+  
+  // Progress bar
+  window.addEventListener('scroll', updateProgressBar);
+}
+
+function updateProgressBar() {
+  const scrollTop = document.documentElement.scrollTop;
+  const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+  const scrolled = (scrollTop / scrollHeight) * 100;
+  
+  const progressBar = document.getElementById('progress-bar');
+  if (progressBar) {
+    progressBar.style.width = `${scrolled}%`;
   }
 }

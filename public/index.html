@@ -25,14 +25,17 @@
     </div>
   </header>
 
+  <!-- Loading Element (Outside Grid) -->
+  <div id="loading-container" class="loading-container">
+    <div class="loading">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
   <main class="container">
     <div class="section">
       <h2 class="section-title"><i class="fas fa-fire"></i> Trending Now</h2>
-      <div id="grid-container" class="grid">
-        <div class="loading">
-          <div class="spinner"></div>
-        </div>
-      </div>
+      <div id="grid-container" class="grid"></div>
     </div>
   </main>
 
@@ -63,15 +66,10 @@
     const FAVORITES_KEY = 'shuttuflix-favorites';
     let favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
 
-    // DOM Elements
-    const gridContainer = document.getElementById('grid-container');
-    const noResultsEl = document.getElementById('no-results');
-    const searchInput = document.getElementById('search');
-    const modal = document.getElementById('player-modal');
-    const closeModalBtn = document.getElementById('close-modal');
-    const modalTitle = document.getElementById('modal-title');
-    const videoContainer = document.getElementById('video-container');
-    const favoritesBtn = document.querySelector('.favorites-btn');
+    // Safe DOM element getter
+    function getEl(id) {
+      return document.getElementById(id);
+    }
 
     // Initialize
     document.addEventListener('DOMContentLoaded', function() {
@@ -81,27 +79,48 @@
 
     // Load catalog
     function loadCatalog() {
+      const loadingContainer = getEl('loading-container');
+      if (loadingContainer) {
+        loadingContainer.style.display = 'block';
+      }
+      
       fetch('/data/catalog.json')
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to load catalog');
+          }
+          return response.json();
+        })
         .then(data => {
           CATALOG = data;
           renderCatalog(CATALOG);
-          document.querySelector('.loading').style.display = 'none';
+          if (loadingContainer) {
+            loadingContainer.style.display = 'none';
+          }
         })
         .catch(error => {
           console.error('Error loading catalog:', error);
           showError('Failed to load content');
+          if (loadingContainer) {
+            loadingContainer.style.display = 'none';
+          }
         });
     }
 
     // Render catalog
     function renderCatalog(items) {
+      const gridContainer = getEl('grid-container');
+      const noResultsEl = getEl('no-results');
+      
+      if (!gridContainer) return;
+      
       if (!items || items.length === 0) {
         showError('No content available');
         return;
       }
       
-      noResultsEl.style.display = 'none';
+      if (noResultsEl) noResultsEl.style.display = 'none';
+      
       gridContainer.innerHTML = items.slice(0, 100).map(item => `
         <div class="card" data-id="${item.id}" data-type="${item.mediaType}" data-title="${item.title}">
           <img class="poster" src="${item.poster}" alt="${item.title}">
@@ -122,13 +141,18 @@
 
     // Open player
     function openPlayer(id, mediaType, title) {
+      const modal = getEl('player-modal');
+      const modalTitle = getEl('modal-title');
+      
       CURRENT_ID = id;
       CURRENT_MEDIA_TYPE = mediaType;
       CURRENT_TITLE = title;
       
       if (modalTitle) modalTitle.textContent = title;
-      if (modal) modal.classList.add('active');
-      document.body.style.overflow = 'hidden';
+      if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
       
       loadPlayer(id, mediaType);
     }
@@ -140,6 +164,7 @@
         : `https://www.vidking.net/embed/tv/${id}/1/1?autoPlay=true&color=ff0000&nextEpisode=true&episodeSelector=true`;
       
       const proxyUrl = `/api/proxy?url=${encodeURIComponent(vidkingUrl)}`;
+      const videoContainer = getEl('video-container');
       
       if (videoContainer) {
         videoContainer.innerHTML = `
@@ -150,6 +175,9 @@
 
     // Close player
     function closePlayer() {
+      const modal = getEl('player-modal');
+      const videoContainer = getEl('video-container');
+      
       if (modal) {
         modal.classList.remove('active');
         document.body.style.overflow = 'auto';
@@ -164,6 +192,7 @@
 
     // Toggle favorites
     function toggleFavorite() {
+      const favoritesBtn = document.querySelector('.favorites-btn');
       if (!CURRENT_ID || !favoritesBtn) return;
       
       const isFavorite = favorites.includes(CURRENT_ID);
@@ -180,11 +209,17 @@
 
     // Search
     function setupEventListeners() {
-      // Close modal
+      const closeModalBtn = getEl('close-modal');
+      const modal = getEl('player-modal');
+      const searchInput = getEl('search');
+      const favoritesBtn = document.querySelector('.favorites-btn');
+      
+      // Close modal button
       if (closeModalBtn) {
         closeModalBtn.addEventListener('click', closePlayer);
       }
       
+      // Close modal on backdrop click
       if (modal) {
         modal.addEventListener('click', function(e) {
           if (e.target === modal) closePlayer();
@@ -193,19 +228,19 @@
       
       // ESC key
       document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modal.classList.contains('active')) {
+        if (e.key === 'Escape' && modal && modal.classList.contains('active')) {
           closePlayer();
         }
       });
       
-      // Favorites
+      // Favorites button
       if (favoritesBtn) {
         favoritesBtn.addEventListener('click', toggleFavorite);
       }
       
-      // Search
-      let searchTimeout;
+      // Search input
       if (searchInput) {
+        let searchTimeout;
         searchInput.addEventListener('input', function(e) {
           clearTimeout(searchTimeout);
           const query = e.target.value.trim();
@@ -217,12 +252,15 @@
           
           searchTimeout = setTimeout(function() {
             searchMovies(query).then(results => {
+              const noResultsEl = getEl('no-results');
+              const gridContainer = getEl('grid-container');
+              
               if (results.length === 0) {
-                noResultsEl.style.display = 'block';
-                gridContainer.innerHTML = '';
+                if (noResultsEl) noResultsEl.style.display = 'block';
+                if (gridContainer) gridContainer.innerHTML = '';
               } else {
                 renderCatalog(results);
-                noResultsEl.style.display = 'none';
+                if (noResultsEl) noResultsEl.style.display = 'none';
               }
             });
           }, 500);
@@ -245,9 +283,16 @@
 
     // Show error
     function showError(message) {
-      noResultsEl.innerHTML = `<div class="no-results-icon">⚠️</div><p>${message}</p>`;
-      noResultsEl.style.display = 'block';
-      gridContainer.innerHTML = '';
+      const noResultsEl = getEl('no-results');
+      const gridContainer = getEl('grid-container');
+      
+      if (noResultsEl) {
+        noResultsEl.innerHTML = `<div class="no-results-icon">⚠️</div><p>${message}</p>`;
+        noResultsEl.style.display = 'block';
+      }
+      if (gridContainer) {
+        gridContainer.innerHTML = '';
+      }
     }
   </script>
 </body>

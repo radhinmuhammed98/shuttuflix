@@ -47,15 +47,19 @@
   </div>
 
 <!-- Player Modal -->
-<div id="modal" class="modal">
+<div id="player-modal" class="modal">
   <button class="favorites-btn" onclick="toggleFavorite()">🤍</button>
   <div class="modal-content">
     <div class="modal-header">
       <h2 class="modal-title" id="modal-title">Movie Title</h2>
-      <button class="close-btn" onclick="closePlayer()">&times;</button>
+      <button class="close-btn" id="close-modal">&times;</button>
     </div>
-    <div id="video-container" class="video-container" style="position: relative; width: 100%; padding-top: 56.25%;">
-      <!-- Video will be inserted here -->
+    <div id="video-container" class="video-container">
+      <!-- Video will load here -->
+      <div id="loading-video" class="loading-video">
+        <div class="spinner"></div>
+        <p>Loading video...</p>
+      </div>
     </div>
   </div>
 </div>

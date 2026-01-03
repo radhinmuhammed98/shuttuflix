@@ -1,4 +1,4 @@
-/* Player Container */
+/* Fixed Video Container */
 .video-container {
   position: relative;
   width: 100%;
@@ -9,10 +9,54 @@
   overflow: hidden;
 }
 
+/* Mobile Override */
 @media (max-width: 768px) {
   .video-container {
-    padding-bottom: 177.78%; /* 9:16 aspect ratio for mobile */
+    padding-bottom: 177.78%; /* 9:16 aspect ratio for mobile portrait */
   }
+  
+  .modal-content {
+    width: 100%;
+    height: 90vh;
+    border-radius: 0;
+  }
+}
+
+/* Desktop Enhancement */
+@media (min-width: 769px) {
+  .modal-content {
+    width: 90%;
+    max-width: 1200px;
+    height: 85vh;
+  }
+}
+
+/* Player iframe styles */
+.video-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+}
+
+/* Remove VidKing's UI bugs */
+.video-container iframe::-webkit-media-controls {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Modal container fixes */
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.modal-header {
+  flex-shrink: 0; /* Prevent header from shrinking */
+  z-index: 10;
 }
 
 /* Loading Overlay */

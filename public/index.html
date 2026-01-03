@@ -40,8 +40,7 @@
     <div class="no-results-icon">🔍</div>
     <p>No results found. Try another search.</p>
   </div>
-
-<!-- Player Modal -->
+<!-- Player Modal - VidKing iframe only -->
 <div id="player-modal" class="modal">
   <button class="favorites-btn">🤍</button>
   <div class="modal-content">
@@ -49,128 +48,61 @@
       <h2 class="modal-title" id="modal-title">Movie Title</h2>
       <button class="close-btn" id="close-modal">&times;</button>
     </div>
-    <div id="video-container" class="video-container">
-      <!-- Video will load here -->
+    <div class="video-container">
+      <iframe 
+        id="player-iframe"
+        width="100%"
+        height="100%"
+        frameborder="0"
+        allowfullscreen
+        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+        sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-presentation allow-top-navigation-by-user-activation"
+      ></iframe>
     </div>
   </div>
 </div>
 
-<!-- HLS.js for .m3u8 playback (with CSP fix) -->
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5"></script>
+<!-- NO HLS.js SCRIPT - Remove this line completely -->
+<!-- <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script> -->
+
 <script>
-// Robust player with proper error handling
+// Player functions using VidKing iframes only
 function loadPlayer(id, mediaType, title) {
-  // Update UI
-  const modalTitle = document.getElementById('modal-title');
-  const modal = document.getElementById('player-modal');
-  const container = document.getElementById('video-container');
-  
-  if (modalTitle) modalTitle.textContent = title;
-  if (modal) modal.classList.add('active');
+  // Update modal title
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('player-modal').classList.add('active');
   document.body.style.overflow = 'hidden';
   
-  // Show loading
-  if (container) {
-    container.innerHTML = '<div style="color:white;text-align:center;padding:40px;">Loading...</div>';
-  }
-  
-  // Fetch sources
-  fetch(`/api/sources?id=${id}&type=${mediaType}`)
-    .then(response => response.json())
-    .then(data => {
-      if (data.sources && data.sources.length > 0) {
-        const source = data.sources[0];
-        if (source.type === 'hls') {
-          // Play direct .m3u8 stream (no ads)
-          playHLSStream(source.url);
-        } else if (source.type === 'embed') {
-          // Fallback to VidKing iframe
-          playVidKingEmbed(source.url);
-        }
-      } else {
-        throw new Error('No sources available');
-      }
-    })
-    .catch(error => {
-      console.error('Failed to load player:', error);
-      showError('Stream unavailable. Please try another source.');
-    });
-}
-
-function playHLSStream(url) {
-  const container = document.getElementById('video-container');
-  if (!container) return;
-  
-  const video = document.createElement('video');
-  video.controls = true;
-  video.style.width = '100%';
-  video.style.height = '100%';
-  video.style.backgroundColor = '#000';
-  
-  if (Hls.isSupported()) {
-    const hls = new Hls();
-    hls.loadSource(url);
-    hls.attachMedia(video);
-  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-    video.src = url;
+  // Create VidKing URL with ad-reducing parameters
+  let vidkingUrl;
+  if (mediaType === 'movie') {
+    vidkingUrl = `https://www.vidking.net/embed/movie/${id}?autoPlay=true&color=ff0000&ads=0&preroll=0`;
   } else {
-    showError('HLS playback not supported on this device.');
-    return;
+    vidkingUrl = `https://www.vidking.net/embed/tv/${id}/1/1?autoPlay=true&color=ff0000&ads=0&preroll=0&nextEpisode=true&episodeSelector=true`;
   }
   
-  container.innerHTML = '';
-  container.appendChild(video);
-}
-
-function playVidKingEmbed(url) {
-  const container = document.getElementById('video-container');
-  if (!container) return;
-  
-  // Create iframe with proper sandboxing
-  const iframe = document.createElement('iframe');
-  iframe.src = url;
-  iframe.allow = 'autoplay; fullscreen; picture-in-picture; encrypted-media';
-  iframe.allowFullscreen = true;
-  iframe.frameBorder = '0';
-  iframe.style.width = '100%';
-  iframe.style.height = '100%';
-  iframe.style.border = 'none';
-  // Enhanced sandbox for security
-  iframe.sandbox = 'allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-presentation allow-top-navigation-by-user-activation';
-  
-  container.innerHTML = '';
-  container.appendChild(iframe);
-}
-
-function showError(message) {
-  const container = document.getElementById('video-container');
-  if (container) {
-    container.innerHTML = `
-      <div style="color:white;text-align:center;padding:40px;">
-        <i class="fas fa-exclamation-triangle" style="font-size:3rem;margin-bottom:20px;"></i>
-        <p>${message}</p>
-        <button onclick="closePlayer()" style="margin-top:20px;background:#fc81b5;border:none;padding:10px 20px;border-radius:24px;color:white;cursor:pointer;">
-          Close
-        </button>
-      </div>
-    `;
+  // Set iframe source
+  const iframe = document.getElementById('player-iframe');
+  if (iframe) {
+    iframe.src = vidkingUrl;
   }
 }
 
 function closePlayer() {
   const modal = document.getElementById('player-modal');
+  const iframe = document.getElementById('player-iframe');
+  
   if (modal) {
     modal.classList.remove('active');
     document.body.style.overflow = 'auto';
   }
   
-  const container = document.getElementById('video-container');
-  if (container) {
-    container.innerHTML = '';
+  if (iframe) {
+    iframe.src = ''; // Stop video and clear
   }
 }
 
-// Initialize player safely
+// Initialize event listeners
 document.addEventListener('DOMContentLoaded', function() {
   const closeModal = document.getElementById('close-modal');
   if (closeModal) {

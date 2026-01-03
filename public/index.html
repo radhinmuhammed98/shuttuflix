@@ -490,6 +490,44 @@ function closePlayer() {
     function showError(message) {
       showNoResults(message);
     }
+  // Mobile-specific video optimization
+function optimizeForMobile() {
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  
+  if (isMobile) {
+    // Force landscape orientation for better viewing
+    if (screen.orientation && screen.orientation.lock) {
+      try {
+        screen.orientation.lock('landscape').catch(() => {
+          // Fallback if orientation lock fails
+          const modal = document.getElementById('player-modal');
+          if (modal) modal.classList.add('mobile-landscape');
+        });
+      } catch (e) {
+        console.log('Orientation lock not supported');
+      }
+    }
+    
+    // Add mobile-specific CSS
+    const style = document.createElement('style');
+    style.textContent = `
+      .mobile-landscape .video-container {
+        padding-bottom: 56.25% !important;
+      }
+      .mobile-landscape {
+        width: 100vw !important;
+        height: 100vh !important;
+        border-radius: 0 !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
+// Call this when opening player
+// In your openPlayer function, add:
+// optimizeForMobile();
+  
   </script>
 </body>
 </html>

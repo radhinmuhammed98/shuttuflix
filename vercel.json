@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' https://image.tmdb.org https://*.vidsrc.to data:; frame-src 'self' https://www.vidking.net; connect-src 'self' https://api.themoviedb.org https://*.vidsrc.to https://static.cloudflareinsights.com; media-src 'self' blob: https://*.vidsrc.to; object-src 'none'; base-uri 'self'; form-action 'self';"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' https://image.tmdb.org https://*.vidsrc.to ; connect-src 'self' https://api.themoviedb.org https://*.vidsrc.to https://static.cloudflareinsights.com; media-src 'self' blob: https://*.vidsrc.to; object-src 'none'; base-uri 'self'; form-action 'self';"
         }
       ]
     }

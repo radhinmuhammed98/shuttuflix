@@ -5,18 +5,24 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' https://image.tmdb.org https://*.vidsrc.to ; connect-src 'self' https://api.themoviedb.org https://*.vidsrc.to https://static.cloudflareinsights.com; media-src 'self' blob: https://*.vidsrc.to; object-src 'none'; base-uri 'self'; form-action 'self';"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' https://image.tmdb.org https://*.vidsrc.to; connect-src 'self' https://api.themoviedb.org https://*.vidsrc.to https://static.cloudflareinsights.com; media-src 'self' blob: https://*.vidsrc.to; object-src 'none'; base-uri 'self'; form-action 'self';"
         }
+      ]
+    },
+    {
+      "source": "/data/(.*)",
+      "headers": [
+        { "key": "Content-Type", "value": "application/json" }
+      ]
+    },
+    {
+      "source": "/css/(.*)",
+      "headers": [
+        { "key": "Content-Type", "value": "text/css" }
       ]
     }
   ],
-  "routes": [
-    { "src": "/api/sources", "dest": "/api/sources.js" },
-    { "src": "/api/search", "dest": "/api/search.js" },
-    { "src": "/data/(.*)", "headers": { "content-type": "application/json" } },
-    { "src": "/css/(.*)", "headers": { "content-type": "text/css" } },
-    { "src": "/(.*)", "dest": "/index.html" }
-  ],
-  "buildCommand": "npm run build",
-  "outputDirectory": "public"
-}
+
+  "rewrites": [
+    { "source": "/api/sources", "destination": "/api/sources.js" },
+    { "source": "/api/search", "destin

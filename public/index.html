@@ -41,28 +41,98 @@
     <p>No results found. Try another search.</p>
   </div>
 
-  <!-- Player Modal -->
-  <div id="player-modal" class="modal">
-    <button class="favorites-btn">🤍</button>
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title" id="modal-title">Movie Title</h2>
-        <button class="close-btn" id="close-modal">&times;</button>
-      </div>
-      <div id="video-container" class="video-container"></div>
-      <div class="player-controls">
-        <button class="control-btn" id="prev-source">
-          <i class="fas fa-arrow-left"></i> Previous Source
-        </button>
-        <button class="control-btn" id="next-source">
-          Next Source <i class="fas fa-arrow-right"></i>
-        </button>
-      </div>
+<!-- Player Modal -->
+<div id="player-modal" class="modal">
+  <button class="favorites-btn">🤍</button>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-title">Movie Title</h2>
+      <button class="close-btn" id="close-modal">&times;</button>
+    </div>
+    <div id="video-container" class="video-container">
+      <!-- Video will be loaded here -->
     </div>
   </div>
+</div>
 
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<!-- HLS.js for .m3u8 playback -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script>
+// Player function using direct HLS streams
+function loadPlayer(id, mediaType, title) {
+  // Update modal title
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('player-modal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  
+  // Show loading
+  const container = document.getElementById('video-container');
+  container.innerHTML = '<div style="color:white;text-align:center;padding:40px;">Loading stream...</div>';
+  
+  // Fetch direct sources
+  fetch(`/api/sources?id=${id}&type=${mediaType}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.sources && data.sources.length > 0) {
+        // Play the first .m3u8 source directly
+        playHLSStream(data.sources[0].url);
+      } else {
+        throw new Error('No sources available');
+      }
+    })
+    .catch(error => {
+      console.error('Failed to load stream:', error);
+      container.innerHTML = `
+        <div style="color:white;text-align:center;padding:40px;">
+          <i class="fas fa-exclamation-triangle" style="font-size:3rem;margin-bottom:20px;"></i>
+          <p>Stream unavailable. Please try another source.</p>
+          <button onclick="closePlayer()" style="margin-top:20px;background:#fc81b5;border:none;padding:10px 20px;border-radius:24px;color:white;cursor:pointer;">
+            Close
+          </button>
+        </div>
+      `;
+    });
+}
+
+function playHLSStream(url) {
+  const container = document.getElementById('video-container');
+  const video = document.createElement('video');
+  video.controls = true;
+  video.style.width = '100%';
+  video.style.height = '100%';
+  video.style.backgroundColor = '#000';
+  
+  if (Hls.isSupported()) {
+    const hls = new Hls();
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.ERROR, (event, data) => {
+      if (data.fatal) {
+        console.error('HLS fatal error:', data);
+        container.innerHTML = '<div style="color:white;text-align:center;padding:40px;">Playback error. Stream may be unavailable.</div>';
+      }
+    });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    // Safari native HLS
+    video.src = url;
+    video.onerror = () => {
+      container.innerHTML = '<div style="color:white;text-align:center;padding:40px;">Safari playback error.</div>';
+    };
+  } else {
+    container.innerHTML = '<div style="color:white;text-align:center;padding:40px;">HLS not supported on this device.</div>';
+    return;
+  }
+  
+  container.innerHTML = '';
+  container.appendChild(video);
+}
+
+function closePlayer() {
+  document.getElementById('player-modal').classList.remove('active');
+  document.body.style.overflow = 'auto';
+  document.getElementById('video-container').innerHTML = '';
+}
+</script>
   <script>
     // Global variables
     let CATALOG = [];

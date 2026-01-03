@@ -4,17 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ShuttuFlix</title>
-  <!-- Fix CSP by loading resources properly -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <!-- Progress bar -->
-  <div class="progress-container">
-    <div class="progress-bar" id="progress-bar"></div>
-  </div>
-
   <!-- Header -->
   <header>
     <div class="container">
@@ -25,18 +19,18 @@
         </a>
         <div class="search-container">
           <i class="fas fa-search search-icon"></i>
-          <input type="text" id="search" class="search-box" placeholder="Search 1000+ movies & shows..." />
+          <input type="text" id="search" class="search-box" placeholder="Search movies & shows..." />
         </div>
       </div>
     </div>
   </header>
 
-  <div class="container">
+  <main class="container">
     <div class="section">
       <h2 class="section-title"><i class="fas fa-fire"></i> Trending Now</h2>
       <div id="grid-container" class="grid"></div>
     </div>
-  </div>
+  </main>
 
   <div id="loading" class="loading" style="display: none;">
     <div class="spinner"></div>
@@ -55,9 +49,7 @@
         <h2 class="modal-title" id="modal-title">Movie Title</h2>
         <button class="close-btn" id="close-modal">&times;</button>
       </div>
-      <div id="video-container" class="video-container">
-        <!-- Player will load here -->
-      </div>
+      <div id="video-container" class="video-container"></div>
       <div class="player-controls">
         <button class="control-btn" id="prev-source">
           <i class="fas fa-arrow-left"></i> Previous Source
@@ -69,7 +61,7 @@
     </div>
   </div>
 
-  <!-- Scripts - Load after DOM is ready -->
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script>
     // Global variables
@@ -94,13 +86,11 @@
     const favoritesBtn = document.querySelector('.favorites-btn');
     const prevSourceBtn = document.getElementById('prev-source');
     const nextSourceBtn = document.getElementById('next-source');
-    const progressBar = document.getElementById('progress-bar');
 
     // Initialize
     document.addEventListener('DOMContentLoaded', function() {
       loadCatalog();
       setupEventListeners();
-      setupPlayerResize();
     });
 
     // Load catalog
@@ -108,12 +98,7 @@
       showLoading();
       
       fetch('/data/catalog.json')
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Failed to load catalog');
-          }
-          return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
           CATALOG = data;
           renderCatalog(CATALOG);
@@ -179,87 +164,117 @@
       
       showLoading();
       
-      // Try sources in order
-      const sources = [
-        {
-          name: 'VidSrc',
-          url: CURRENT_MEDIA_TYPE === 'movie' 
-            ? `https://vidsrc.to/embed/movie/${CURRENT_ID}`
-            : `https://vidsrc.to/embed/tv/${CURRENT_ID}/1/1`
-        },
-        {
-          name: '2Embed',
-          url: `https://www.2embed.cc/embed/${CURRENT_ID}`
-        },
-        {
-          name: 'F2Movies',
-          url: CURRENT_MEDIA_TYPE === 'movie' 
-            ? `https://f2movies.to/movie/${CURRENT_ID}`
-            : `https://f2movies.to/tv/${CURRENT_ID}/1/1`
-        }
-      ];
-      
-      loadSource(sources, currentSourceIndex);
+      fetch(`/api/sources?id=${CURRENT_ID}&type=${CURRENT_MEDIA_TYPE}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.sources && data.sources.length > 0) {
+            playSource(data.sources, currentSourceIndex);
+          } else {
+            throw new Error('No sources available');
+          }
+        })
+        .catch(error => {
+          console.error('Source loading failed:', error);
+          // Fallback to VidKing embed
+          const vidkingUrl = CURRENT_MEDIA_TYPE === 'movie' 
+            ? `https://www.vidking.net/embed/movie/${CURRENT_ID}?autoPlay=true&color=ff0000`
+            : `https://www.vidking.net/embed/tv/${CURRENT_ID}/1/1?autoPlay=true&color=ff0000&nextEpisode=true&episodeSelector=true`;
+          
+          videoContainer.innerHTML = `
+            <iframe 
+              src="${vidkingUrl}" 
+              allowfullscreen 
+              style="width:100%;height:100%;border:none;" 
+              allow="autoplay; fullscreen; picture-in-picture"
+            ></iframe>
+          `;
+          hideLoading();
+        });
     }
 
-    // Load source
-    function loadSource(sources, index) {
+    // Play source
+    function playSource(sources, index) {
       if (index >= sources.length) {
         hideLoading();
-        videoContainer.innerHTML = `
-          <div style="color: white; text-align: center; padding: 40px; height: 100%;">
-            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 20px;"></i>
-            <p>All sources failed. Please try again later.</p>
-            <button onclick="closePlayer()" style="margin-top: 20px; background: #fc81b5; border: none; padding: 10px 20px; border-radius: 24px; color: white; cursor: pointer;">
-              Close
-            </button>
-          </div>
-        `;
+        showError('All sources failed. Please try again later.');
         return;
       }
       
       const source = sources[index];
-      
-      // Create iframe
-      const iframe = document.createElement('iframe');
-      iframe.src = source.url;
-      iframe.allow = 'autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write';
-      iframe.allowFullscreen = true;
-      iframe.frameBorder = '0';
-      iframe.style.width = '100%';
-      iframe.style.height = '100%';
-      iframe.style.border = 'none';
-      iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-presentation allow-top-navigation-by-user-activation');
-      
-      // Clear container and add iframe
       videoContainer.innerHTML = '';
-      videoContainer.appendChild(iframe);
       
-      // Update source indicator
-      updateSourceIndicator(source.name, index + 1, sources.length);
-      
-      // Hide loading after a short delay
-      setTimeout(hideLoading, 2000);
-      
-      // Set up error handling
-      iframe.onload = function() {
-        hideLoading();
-      };
-      
-      iframe.onerror = function() {
-        hideLoading();
-        if (index + 1 < sources.length) {
-          setTimeout(() => loadSource(sources, index + 1), 1000);
+      if (source.type === 'hls') {
+        // Use HLS.js for .m3u8 streams
+        if (Hls.isSupported()) {
+          const video = document.createElement('video');
+          video.controls = true;
+          video.style.width = '100%';
+          video.style.height = '100%';
+          video.style.backgroundColor = '#000';
+          
+          const hls = new Hls();
+          hls.loadSource(source.url);
+          hls.attachMedia(video);
+          
+          hls.on(Hls.Events.ERROR, (event, data) => {
+            if (data.fatal) {
+              console.error('HLS fatal error:', data);
+              // Try next source
+              if (index + 1 < sources.length) {
+                setTimeout(() => playSource(sources, index + 1), 1000);
+              } else {
+                hideLoading();
+                showError('Stream unavailable');
+              }
+            }
+          });
+          
+          videoContainer.appendChild(video);
+          hideLoading();
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          // Safari native HLS
+          const video = document.createElement('video');
+          video.controls = true;
+          video.style.width = '100%';
+          video.style.height = '100%';
+          video.style.backgroundColor = '#000';
+          video.src = source.url;
+          
+          video.onerror = () => {
+            if (index + 1 < sources.length) {
+              setTimeout(() => playSource(sources, index + 1), 1000);
+            } else {
+              hideLoading();
+              showError('Stream unavailable');
+            }
+          };
+          
+          videoContainer.appendChild(video);
+          hideLoading();
+        } else {
+          hideLoading();
+          showError('HLS not supported on this device');
         }
-      };
-    }
-
-    // Update source indicator
-    function updateSourceIndicator(name, current, total) {
-      const indicator = document.getElementById('source-indicator');
-      if (indicator) {
-        indicator.innerHTML = `<span>Source ${current}/${total}: ${name}</span>`;
-        indicator.style.display = 'block';
+      } else {
+        // Direct MP4 playback
+        const video = document.createElement('video');
+        video.controls = true;
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.backgroundColor = '#000';
+        video.src = source.url;
+        
+        video.onerror = () => {
+          if (index + 1 < sources.length) {
+            setTimeout(() => playSource(sources, index + 1), 1000);
+          } else {
+            hideLoading();
+            showError('Stream unavailable');
+          }
+        };
+        
+        videoContainer.appendChild(video);
+        hideLoading();
       }
     }
 
@@ -326,10 +341,8 @@
       // Source navigation
       if (prevSourceBtn) {
         prevSourceBtn.addEventListener('click', function() {
-          if (currentSourceIndex > 0) {
-            currentSourceIndex--;
-            loadSources();
-          }
+          currentSourceIndex = Math.max(0, currentSourceIndex - 1);
+          loadSources();
         });
       }
       
@@ -400,31 +413,6 @@
     function showError(message) {
       showNoResults(message);
     }
-
-    // Player resize handler
-    function setupPlayerResize() {
-      function resizePlayer() {
-        const isMobile = window.innerWidth <= 768;
-        const container = document.getElementById('video-container');
-        if (container) {
-          container.style.paddingBottom = isMobile ? '177.78%' : '56.25%'; // 9:16 for mobile, 16:9 for desktop
-        }
-      }
-      
-      window.addEventListener('resize', resizePlayer);
-      resizePlayer(); // Initial call
-    }
-
-    // Progress bar
-    window.addEventListener('scroll', function() {
-      const scrollTop = document.documentElement.scrollTop;
-      const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-      const scrolled = (scrollTop / scrollHeight) * 100;
-      
-      if (progressBar) {
-        progressBar.style.width = `${scrolled}%`;
-      }
-    });
   </script>
 </body>
 </html>

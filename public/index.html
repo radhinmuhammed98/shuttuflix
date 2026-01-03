@@ -49,60 +49,58 @@
       <h2 class="modal-title" id="modal-title">Movie Title</h2>
       <button class="close-btn" id="close-modal">&times;</button>
     </div>
-    <div class="video-container">
-      <iframe 
-        id="player-iframe"
-        width="100%"
-        height="100%"
-        frameborder="0"
-        allowfullscreen
-        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-        sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-presentation allow-top-navigation-by-user-activation"
-      ></iframe>
+    <div id="video-container" class="video-container">
+      <!-- Video will load here -->
     </div>
   </div>
 </div>
-<!-- HLS.js for .m3u8 playback -->
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<!-- HLS.js for .m3u8 playback (with CSP fix) -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5"></script>
 <script>
-// Player function using direct HLS streams
+// Robust player with proper error handling
 function loadPlayer(id, mediaType, title) {
-  // Update modal title
-  document.getElementById('modal-title').textContent = title;
-  document.getElementById('player-modal').classList.add('active');
+  // Update UI
+  const modalTitle = document.getElementById('modal-title');
+  const modal = document.getElementById('player-modal');
+  const container = document.getElementById('video-container');
+  
+  if (modalTitle) modalTitle.textContent = title;
+  if (modal) modal.classList.add('active');
   document.body.style.overflow = 'hidden';
   
   // Show loading
-  const container = document.getElementById('video-container');
-  container.innerHTML = '<div style="color:white;text-align:center;padding:40px;">Loading stream...</div>';
+  if (container) {
+    container.innerHTML = '<div style="color:white;text-align:center;padding:40px;">Loading...</div>';
+  }
   
-  // Fetch direct sources
+  // Fetch sources
   fetch(`/api/sources?id=${id}&type=${mediaType}`)
     .then(response => response.json())
     .then(data => {
       if (data.sources && data.sources.length > 0) {
-        // Play the first .m3u8 source directly
-        playHLSStream(data.sources[0].url);
+        const source = data.sources[0];
+        if (source.type === 'hls') {
+          // Play direct .m3u8 stream (no ads)
+          playHLSStream(source.url);
+        } else if (source.type === 'embed') {
+          // Fallback to VidKing iframe
+          playVidKingEmbed(source.url);
+        }
       } else {
         throw new Error('No sources available');
       }
     })
     .catch(error => {
-      console.error('Failed to load stream:', error);
-      container.innerHTML = `
-        <div style="color:white;text-align:center;padding:40px;">
-          <i class="fas fa-exclamation-triangle" style="font-size:3rem;margin-bottom:20px;"></i>
-          <p>Stream unavailable. Please try another source.</p>
-          <button onclick="closePlayer()" style="margin-top:20px;background:#fc81b5;border:none;padding:10px 20px;border-radius:24px;color:white;cursor:pointer;">
-            Close
-          </button>
-        </div>
-      `;
+      console.error('Failed to load player:', error);
+      showError('Stream unavailable. Please try another source.');
     });
 }
 
 function playHLSStream(url) {
   const container = document.getElementById('video-container');
+  if (!container) return;
+  
   const video = document.createElement('video');
   video.controls = true;
   video.style.width = '100%';
@@ -113,20 +111,10 @@ function playHLSStream(url) {
     const hls = new Hls();
     hls.loadSource(url);
     hls.attachMedia(video);
-    hls.on(Hls.Events.ERROR, (event, data) => {
-      if (data.fatal) {
-        console.error('HLS fatal error:', data);
-        container.innerHTML = '<div style="color:white;text-align:center;padding:40px;">Playback error. Stream may be unavailable.</div>';
-      }
-    });
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-    // Safari native HLS
     video.src = url;
-    video.onerror = () => {
-      container.innerHTML = '<div style="color:white;text-align:center;padding:40px;">Safari playback error.</div>';
-    };
   } else {
-    container.innerHTML = '<div style="color:white;text-align:center;padding:40px;">HLS not supported on this device.</div>';
+    showError('HLS playback not supported on this device.');
     return;
   }
   
@@ -134,11 +122,74 @@ function playHLSStream(url) {
   container.appendChild(video);
 }
 
-function closePlayer() {
-  document.getElementById('player-modal').classList.remove('active');
-  document.body.style.overflow = 'auto';
-  document.getElementById('video-container').innerHTML = '';
+function playVidKingEmbed(url) {
+  const container = document.getElementById('video-container');
+  if (!container) return;
+  
+  // Create iframe with proper sandboxing
+  const iframe = document.createElement('iframe');
+  iframe.src = url;
+  iframe.allow = 'autoplay; fullscreen; picture-in-picture; encrypted-media';
+  iframe.allowFullscreen = true;
+  iframe.frameBorder = '0';
+  iframe.style.width = '100%';
+  iframe.style.height = '100%';
+  iframe.style.border = 'none';
+  // Enhanced sandbox for security
+  iframe.sandbox = 'allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-presentation allow-top-navigation-by-user-activation';
+  
+  container.innerHTML = '';
+  container.appendChild(iframe);
 }
+
+function showError(message) {
+  const container = document.getElementById('video-container');
+  if (container) {
+    container.innerHTML = `
+      <div style="color:white;text-align:center;padding:40px;">
+        <i class="fas fa-exclamation-triangle" style="font-size:3rem;margin-bottom:20px;"></i>
+        <p>${message}</p>
+        <button onclick="closePlayer()" style="margin-top:20px;background:#fc81b5;border:none;padding:10px 20px;border-radius:24px;color:white;cursor:pointer;">
+          Close
+        </button>
+      </div>
+    `;
+  }
+}
+
+function closePlayer() {
+  const modal = document.getElementById('player-modal');
+  if (modal) {
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+  }
+  
+  const container = document.getElementById('video-container');
+  if (container) {
+    container.innerHTML = '';
+  }
+}
+
+// Initialize player safely
+document.addEventListener('DOMContentLoaded', function() {
+  const closeModal = document.getElementById('close-modal');
+  if (closeModal) {
+    closeModal.addEventListener('click', closePlayer);
+  }
+  
+  const modal = document.getElementById('player-modal');
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) closePlayer();
+    });
+  }
+  
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && modal && modal.classList.contains('active')) {
+      closePlayer();
+    }
+  });
+});
 </script>
   <script>
     // Global variables

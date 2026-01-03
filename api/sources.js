@@ -16,53 +16,39 @@ export default async function (req, res) {
   }
 
   try {
-    // Try VidSrc first (cleanest sources)
-    const sources = await getVidSrcSources(id, type);
-    if (sources.length > 0) {
-      return res.status(200).json({ sources });
-    }
-    
-    // Fallback to other sources
-    const fallbackSources = await getFallbackSources(id, type);
-    res.status(200).json({ sources: fallbackSources });
-    
+    // Get direct sources from VidSrc (no iframe needed)
+    const sources = await getVidSrcDirectSources(id, type);
+    res.status(200).json({ sources });
   } catch (error) {
-    console.error('Sources API error:', error);
-    res.status(500).json({ error: 'Failed to fetch sources' });
+    console.error('Source error:', error);
+    res.status(500).json({ error: 'No sources available' });
   }
 }
 
-async function getVidSrcSources(id, type) {
-  try {
-    // Get embed page to extract data-id
-    const embedRes = await fetch(`https://vidsrc.to/embed/${type}/${id}`);
-    const embedHtml = await embedRes.text();
-    
-    const idMatch = embedHtml.match(/data-id="([^"]+)"/);
-    if (!idMatch) return [];
-    
-    // Get direct sources
-    const sourcesRes = await fetch(`https://vidsrc.to/ajax/embed/${type}/${idMatch[1]}`);
-    const sourcesData = await sourcesRes.json();
-    
-    if (sourcesData.result?.sources) {
-      return sourcesData.result.sources
-        .filter(s => s.file && (s.file.includes('.m3u8') || s.file.includes('.mp4')))
-        .map(s => ({
-          url: s.file,
-          quality: s.label || 'auto',
-          type: s.file.includes('.m3u8') ? 'hls' : 'mp4',
-          provider: 'vidsrc'
-        }));
-    }
-    return [];
-  } catch (error) {
-    console.log('VidSrc failed:', error.message);
-    return [];
+async function getVidSrcDirectSources(id, type) {
+  // Step 1: Get the embed ID from VidSrc
+  const embedRes = await fetch(`https://vidsrc.to/embed/${type}/${id}`);
+  const embedHtml = await embedRes.text();
+  
+  // Extract data-id from the page
+  const idMatch = embedHtml.match(/data-id="([^"]+)"/);
+  if (!idMatch) throw new Error('No embed ID found');
+  
+  // Step 2: Get direct sources using the embed ID
+  const sourcesRes = await fetch(`https://vidsrc.to/ajax/embed/${type}/${idMatch[1]}`);
+  const sourcesData = await sourcesRes.json();
+  
+  // Return only .m3u8 sources (HLS streams)
+  if (sourcesData.result?.sources) {
+    return sourcesData.result.sources
+      .filter(s => s.file && s.file.includes('.m3u8'))
+      .map(s => ({
+        url: s.file,
+        quality: s.label || 'auto',
+        type: 'hls',
+        provider: 'vidsrc'
+      }));
   }
-}
-
-async function getFallbackSources(id, type) {
-  // Add other source providers here if needed
+  
   return [];
 }

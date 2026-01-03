@@ -49,12 +49,19 @@
       <h2 class="modal-title" id="modal-title">Movie Title</h2>
       <button class="close-btn" id="close-modal">&times;</button>
     </div>
-    <div id="video-container" class="video-container">
-      <!-- Video will be loaded here -->
+    <div class="video-container">
+      <iframe 
+        id="player-iframe"
+        width="100%"
+        height="100%"
+        frameborder="0"
+        allowfullscreen
+        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+        sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-presentation allow-top-navigation-by-user-activation"
+      ></iframe>
     </div>
   </div>
 </div>
-
 <!-- HLS.js for .m3u8 playback -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
